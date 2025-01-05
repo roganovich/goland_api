@@ -1,0 +1,5 @@
+.idea
+*.bak
+*.mod
+*.sum
+bin
