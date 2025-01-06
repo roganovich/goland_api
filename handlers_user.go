@@ -21,7 +21,7 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 		users := []User{}
 		for rows.Next() {
 			var u User
-			if err := rows.Scan(&u.ID, &u.Name, &u.Email); err != nil {
+			if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Status, &u.DataCreate, &u.DateUpdate, &u.DateDelete); err != nil {
 				log.Fatal(err)
 			}
 			users = append(users, u)
@@ -41,7 +41,7 @@ func getUser(db *sql.DB) http.HandlerFunc {
 		id := vars["id"]
 
 		var u User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Name, &u.Email)
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Status, &u.DataCreate, &u.DateUpdate, &u.DateDelete)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -57,7 +57,7 @@ func createUser(db *sql.DB) http.HandlerFunc {
 		var u User
 		json.NewDecoder(r.Body).Decode(&u)
 
-		err := db.QueryRow("INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id", u.Name, u.Email).Scan(&u.ID)
+		err := db.QueryRow("INSERT INTO users (name, email, phone) VALUES ($1, $2) RETURNING id", u.Name, u.Email, u.Phone).Scan(&u.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -75,7 +75,7 @@ func updateUser(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		_, err := db.Exec("UPDATE users SET name = $1, email = $2 WHERE id = $3", u.Name, u.Email, id)
+		_, err := db.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", u.Name, u.Email, u.Phone, id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -91,7 +91,7 @@ func deleteUser(db *sql.DB) http.HandlerFunc {
 		id := vars["id"]
 
 		var u User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Name, &u.Email)
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Status, &u.DataCreate, &u.DateUpdate, &u.DateDelete)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   go-app:
-    container_name: go-app
+    container_name: goland_api
     image: francescoxx/go-app:1.0.0
     build: .
     environment:
