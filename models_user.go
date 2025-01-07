@@ -20,3 +20,9 @@ type CreateUserRequest struct {
 	Email string `json:"email" validate:"required,email"`
 	Phone *string `json:"phone" validate:"omitempty,min=6,max=20"`
 }
+
+type UpdateUserRequest struct {
+	Name string `json:"name" validate:"required,min=3,max=128"`
+	Email string `json:"email" validate:"required,email"`
+	Phone *string `json:"phone" validate:"omitempty,min=6,max=20"`
+}

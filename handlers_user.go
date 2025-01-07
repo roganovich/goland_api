@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -64,6 +65,19 @@ func validateCreateUserRequest(r *http.Request) (error, CreateUserRequest) {
 	return nil, req
 }
 
+func validateUpdateUserRequest(r *http.Request) (error, UpdateUserRequest) {
+	var req UpdateUserRequest
+	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
+		return validation, req
+	}
+	validate := validator.New()
+	if validation := validate.Struct(req); validation != nil {
+		return validation, req
+	}
+
+	return nil, req
+}
+
 // create user
 func createUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -89,13 +103,20 @@ func createUser(db *sql.DB) http.HandlerFunc {
 // update user
 func updateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		validation, userRequest := validateUpdateUserRequest(r)
+		if  validation != nil {
+			http.Error(w, validation.Error(), http.StatusBadRequest)
+			return
+		}
 		var u User
-		json.NewDecoder(r.Body).Decode(&u)
-
+		u.Name = userRequest.Name
+		u.Email = userRequest.Email
+		u.Phone = userRequest.Phone
 		vars := mux.Vars(r)
-		id := vars["id"]
+		paramId, _ := strconv.Atoi(vars["id"])
+		u.ID = paramId
 
-		_, err := db.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", u.Name, u.Email, u.Phone, id)
+		_, err := db.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", u.Name, u.Email, u.Phone, paramId)
 		if err != nil {
 			log.Fatal(err)
 		}
