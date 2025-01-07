@@ -21,11 +21,11 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 
 		users := []User{}
 		for rows.Next() {
-			var u User
-			if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Status, &u.DataCreate, &u.DateUpdate, &u.DateDelete); err != nil {
+			var user User
+			if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete); err != nil {
 				log.Fatal(err)
 			}
-			users = append(users, u)
+			users = append(users, user)
 		}
 		if err := rows.Err(); err != nil {
 			log.Fatal(err)
@@ -35,20 +35,27 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func getOne(db *sql.DB, paramId int) (error, User) {
+	var user User
+	err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete)
+
+	return err, user
+}
+
+
 // get user by id
 func getUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		id := vars["id"]
+		paramId, _ := strconv.Atoi(vars["id"])
 
-		var u User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Status, &u.DataCreate, &u.DateUpdate, &u.DateDelete)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
+		errorResponse, user := getOne(db, paramId)
+		if  errorResponse != nil {
+			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
 		}
 
-		json.NewEncoder(w).Encode(u)
+		json.NewEncoder(w).Encode(user)
 	}
 }
 
@@ -86,17 +93,17 @@ func createUser(db *sql.DB) http.HandlerFunc {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
 		}
-		var u User
-		u.Name = userRequest.Name
-		u.Email = userRequest.Email
-		u.Phone = userRequest.Phone
+		var user User
+		user.Name = userRequest.Name
+		user.Email = userRequest.Email
+		user.Phone = userRequest.Phone
 
-		err := db.QueryRow("INSERT INTO users (name, email, phone) VALUES ($1, $2, $3) RETURNING id", u.Name, u.Email, u.Phone).Scan(&u.ID)
+		err := db.QueryRow("INSERT INTO users (name, email, phone) VALUES ($1, $2, $3) RETURNING id", user.Name, user.Email, user.Phone).Scan(&user.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		json.NewEncoder(w).Encode(u)
+		json.NewEncoder(w).Encode(user)
 	}
 }
 
@@ -108,20 +115,24 @@ func updateUser(db *sql.DB) http.HandlerFunc {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
 		}
-		var u User
-		u.Name = userRequest.Name
-		u.Email = userRequest.Email
-		u.Phone = userRequest.Phone
+		var user User
+		user.Name = userRequest.Name
+		user.Email = userRequest.Email
+		user.Phone = userRequest.Phone
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
-		u.ID = paramId
+		user.ID = paramId
 
-		_, err := db.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", u.Name, u.Email, u.Phone, paramId)
+		_, err := db.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", user.Name, user.Email, user.Phone, paramId)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		json.NewEncoder(w).Encode(u)
+		errorResponse, user := getOne(db, paramId)
+		if  errorResponse != nil {
+			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+			return
+		}
+		json.NewEncoder(w).Encode(user)
 	}
 }
 
@@ -129,15 +140,15 @@ func updateUser(db *sql.DB) http.HandlerFunc {
 func deleteUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		id := vars["id"]
+		paramId, _ := strconv.Atoi(vars["id"])
 
-		var u User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Status, &u.DataCreate, &u.DateUpdate, &u.DateDelete)
+		var user User
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		} else {
-			_, err := db.Exec("DELETE FROM users WHERE id = $1", id)
+			_, err := db.Exec("DELETE FROM users WHERE id = $1", paramId)
 			if err != nil {
 				//todo : fix error handling
 				w.WriteHeader(http.StatusNotFound)
