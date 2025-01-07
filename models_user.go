@@ -14,3 +14,9 @@ type User struct {
 	DateUpdate time.Time `json:"updated_at"`
 	DateDelete *time.Time `json:"deleted_at"`
 }
+
+type CreateUserRequest struct {
+	Name string `json:"name" validate:"required,min=3,max=128"`
+	Email string `json:"email" validate:"required,email"`
+	Phone *string `json:"phone" validate:"omitempty,min=6,max=20"`
+}

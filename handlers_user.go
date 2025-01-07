@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
+	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
@@ -51,13 +51,33 @@ func getUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func validateCreateUserRequest(r *http.Request) (error, CreateUserRequest) {
+	var req CreateUserRequest
+	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
+		return validation, req
+	}
+	validate := validator.New()
+	if validation := validate.Struct(req); validation != nil {
+		return validation, req
+	}
+
+	return nil, req
+}
+
 // create user
 func createUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		validation, userRequest := validateCreateUserRequest(r)
+		if  validation != nil {
+			http.Error(w, validation.Error(), http.StatusBadRequest)
+			return
+		}
 		var u User
-		json.NewDecoder(r.Body).Decode(&u)
+		u.Name = userRequest.Name
+		u.Email = userRequest.Email
+		u.Phone = userRequest.Phone
 
-		err := db.QueryRow("INSERT INTO users (name, email, phone) VALUES ($1, $2) RETURNING id", u.Name, u.Email, u.Phone).Scan(&u.ID)
+		err := db.QueryRow("INSERT INTO users (name, email, phone) VALUES ($1, $2, $3) RETURNING id", u.Name, u.Email, u.Phone).Scan(&u.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
