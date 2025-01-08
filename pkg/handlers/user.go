@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/roganovich/goland_api/pkg/models"
+	"goland_api/pkg/models"
 
 	"database/sql"
 	"encoding/json"
@@ -13,7 +13,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func getUsers(db *sql.DB) http.HandlerFunc {
+func GetUsers(db *sql.DB) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT * FROM users")
 		if err != nil {
@@ -21,9 +22,9 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 		}
 		defer rows.Close()
 
-		users := []User{}
+		users := []models.User{}
 		for rows.Next() {
-			var user User
+			var user models.User
 			if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete); err != nil {
 				log.Fatal(err)
 			}
@@ -37,8 +38,8 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getOne(db *sql.DB, paramId int) (error, User) {
-	var user User
+func getOne(db *sql.DB, paramId int) (error, models.User) {
+	var user models.User
 	err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete)
 
 	return err, user
@@ -46,7 +47,7 @@ func getOne(db *sql.DB, paramId int) (error, User) {
 
 
 // get user by id
-func getUser(db *sql.DB) http.HandlerFunc {
+func GetUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
@@ -61,8 +62,8 @@ func getUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func validateCreateUserRequest(r *http.Request) (error, CreateUserRequest) {
-	var req CreateUserRequest
+func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest) {
+	var req models.CreateUserRequest
 	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
 		return validation, req
 	}
@@ -74,8 +75,8 @@ func validateCreateUserRequest(r *http.Request) (error, CreateUserRequest) {
 	return nil, req
 }
 
-func validateUpdateUserRequest(r *http.Request) (error, UpdateUserRequest) {
-	var req UpdateUserRequest
+func validateUpdateUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
+	var req models.UpdateUserRequest
 	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
 		return validation, req
 	}
@@ -88,14 +89,14 @@ func validateUpdateUserRequest(r *http.Request) (error, UpdateUserRequest) {
 }
 
 // create user
-func createUser(db *sql.DB) http.HandlerFunc {
+func CreateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := validateCreateUserRequest(r)
 		if  validation != nil {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
 		}
-		var user User
+		var user models.User
 		user.Name = userRequest.Name
 		user.Email = userRequest.Email
 		user.Phone = userRequest.Phone
@@ -110,14 +111,14 @@ func createUser(db *sql.DB) http.HandlerFunc {
 }
 
 // update user
-func updateUser(db *sql.DB) http.HandlerFunc {
+func UpdateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := validateUpdateUserRequest(r)
 		if  validation != nil {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
 		}
-		var user User
+		var user models.User
 		user.Name = userRequest.Name
 		user.Email = userRequest.Email
 		user.Phone = userRequest.Phone
@@ -139,12 +140,12 @@ func updateUser(db *sql.DB) http.HandlerFunc {
 }
 
 // delete user
-func deleteUser(db *sql.DB) http.HandlerFunc {
+func DeleteUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		var user User
+		var user models.User
 		err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)

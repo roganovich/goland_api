@@ -11,7 +11,7 @@ COPY . .
 RUN go get -d -v ./...
 
 # Build the Go app
-RUN go build -o api .
+RUN go build -o api ./cmd/server/main.go
 
 #EXPOSE the port
 EXPOSE 8000

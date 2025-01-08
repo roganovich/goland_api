@@ -1,16 +1,19 @@
 # Получить все зависимости
-`go get .`
+`go get ./cmd/server/main.go`
 
-# Запустиить приложение
-`go run .`
+# Собрать приложение
+go build -v ./cmd/server/main.go
 
-# Запустиить контейнер Postgres
+# Запустить приложение
+`go run ./cmd/server/main.go`
+
+# Запустить контейнер Postgres
 `docker compose up -d go_db`
 
 # Собрать контейнер API
 `docker compose build`
 
-# Запустиить контейнер API
+# Запустить контейнер API
 `docker compose up go-app`
 
 # Список контейнеров
