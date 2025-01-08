@@ -1,6 +1,8 @@
-package main
+package handlers
 
 import (
+	"github.com/roganovich/goland_api/pkg/models"
+
 	"database/sql"
 	"encoding/json"
 	"log"
