@@ -25,7 +25,7 @@ func GetUsers(db *sql.DB) http.HandlerFunc {
 		users := []models.User{}
 		for rows.Next() {
 			var user models.User
-			if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete); err != nil {
+			if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 				log.Fatal(err)
 			}
 			users = append(users, user)
@@ -38,9 +38,18 @@ func GetUsers(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getOne(db *sql.DB, paramId int) (error, models.User) {
+func getOneUser(db *sql.DB, paramId int) (error, models.User) {
 	var user models.User
-	err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete)
+	err := db.QueryRow("SELECT * FROM users WHERE id = $1", int64(paramId)).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Phone,
+		&user.Status,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&user.DeletedAt,
+		)
 
 	return err, user
 }
@@ -52,7 +61,7 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, user := getOne(db, paramId)
+		errorResponse, user := getOneUser(db, paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -75,7 +84,7 @@ func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest
 	return nil, req
 }
 
-func validateUpdateUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
+func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
 	var req models.UpdateUserRequest
 	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
 		return validation, req
@@ -113,7 +122,7 @@ func CreateUser(db *sql.DB) http.HandlerFunc {
 // update user
 func UpdateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, userRequest := validateUpdateUserRequest(r)
+		validation, userRequest := valiUpdatedAtUserRequest(r)
 		if  validation != nil {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
@@ -130,7 +139,7 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 		if err != nil {
 			log.Fatal(err)
 		}
-		errorResponse, user := getOne(db, paramId)
+		errorResponse, user := getOneUser(db, paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -146,7 +155,7 @@ func DeleteUser(db *sql.DB) http.HandlerFunc {
 		paramId, _ := strconv.Atoi(vars["id"])
 
 		var user models.User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.DataCreate, &user.DateUpdate, &user.DateDelete)
+		err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

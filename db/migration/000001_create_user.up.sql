@@ -9,7 +9,7 @@ CREATE TABLE "users" (
   "deleted_at" timestamptz
 );
 
-CREATE INDEX ON "users" ("email", "email");
+CREATE INDEX IF NOT EXISTS idx_users_name_email ON teams (name, email);
 CREATE UNIQUE INDEX users_email_unique ON users (email);
 
 COMMENT ON COLUMN "users"."name" IS 'ФИО';
