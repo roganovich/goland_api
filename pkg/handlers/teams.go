@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"goland_api/pkg/models"
-
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
+
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -126,6 +126,7 @@ func CreateTeam(db *sql.DB) http.HandlerFunc {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
 		}
+
 		var team models.Team
 		team.Name = teamRequest.Name
 		team.Description = teamRequest.Description

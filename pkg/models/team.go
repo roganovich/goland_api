@@ -23,14 +23,6 @@ type Team struct {
 	DeletedAt 			*time.Time 	   `json:"deleted_at, omitempty"`		// Дата удаления
 }
 
-// Media - структура дляDateUpdate медиа-файлов
-type Media struct {
-	URL      	string     `json:"url"`
-	FileType 	string     `json:"file_type"`
-	Size     	int64      `json:"size"`
-	CreatedAt 	time.Time 	`json:"created_at"`
-}
-
 // CreateTeamRequest - структура запроса на добавление команды
 type CreateTeamRequest struct {
 	Name            	string         `json:"name" validate:"required"`       // Название*

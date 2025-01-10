@@ -34,6 +34,9 @@ func main() {
 	router.HandleFunc("/api/teams/{id}", handlers.UpdateTeam(db)).Methods("PUT")
 	router.HandleFunc("/api/teams/{id}", handlers.DeleteTeam(db)).Methods("DELETE")
 
+	// Media
+	router.HandleFunc("/api/media/preloader", handlers.Preloader(db)).Methods("POST")
+
 	//start server
 	log.Fatal(http.ListenAndServe(":8000", handlers.JsonContentTypeMiddleware(router)))
 }
