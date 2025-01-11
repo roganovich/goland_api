@@ -1,4 +1,4 @@
-CREATE TABLE "files" (
+CREATE TABLE "medias" (
      "id" bigserial PRIMARY KEY,
      "name" uuid NOT NULL,
      "path" varchar NOT NULL,
@@ -7,8 +7,8 @@ CREATE TABLE "files" (
      "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-COMMENT ON COLUMN "files"."name" IS 'Имя файла';
-COMMENT ON COLUMN "files"."path" IS 'Путь к файлу';
-COMMENT ON COLUMN "files"."ext" IS 'Расширение';
-COMMENT ON COLUMN "files"."size" IS 'Размер';
-COMMENT ON COLUMN "files"."created_at" IS 'Дата создания';
+COMMENT ON COLUMN "medias"."name" IS 'Имя файла';
+COMMENT ON COLUMN "medias"."path" IS 'Путь к файлу';
+COMMENT ON COLUMN "medias"."ext" IS 'Расширение';
+COMMENT ON COLUMN "medias"."size" IS 'Размер';
+COMMENT ON COLUMN "medias"."created_at" IS 'Дата создания';

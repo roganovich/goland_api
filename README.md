@@ -16,6 +16,9 @@ go build -v ./cmd/server/main.go
 # Запустить контейнер API
 `docker compose up go-app`
 
+# Собрать контейнер API и запустить
+`docker compose up go-app --build`
+
 # Список контейнеров
 `docker ps -a`
 

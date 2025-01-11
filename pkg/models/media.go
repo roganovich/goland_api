@@ -5,7 +5,7 @@ import(
 )
 
 // Media - структура для медиа-файлов
-type File struct {
+type Media struct {
 	ID      	int     	`json:"id"`
 	Name      	string    	`json:"name"`
 	Path      	string     	`json:"path"`

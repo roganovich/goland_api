@@ -47,14 +47,14 @@ func Preloader(db *sql.DB) http.HandlerFunc {
 		createdAt := time.Now()
 		mimeType := getMIMEType(fileHeader.Filename)
 
-		var media models.File
+		var media models.Media
 		media.Name = fileName
 		media.Path = dstPath
 		media.Ext = mimeType
 		media.Size = fileSize
 		media.CreatedAt = createdAt
 
-		errInsert := db.QueryRow("INSERT INTO files (name, path, ext, size) VALUES ($1, $2, $3, $4) RETURNING id", media.Name, media.Path, media.Ext, media.Size).Scan(&media.ID)
+		errInsert := db.QueryRow("INSERT INTO medias (name, path, ext, size) VALUES ($1, $2, $3, $4) RETURNING id", media.Name, media.Path, media.Ext, media.Size).Scan(&media.ID)
 		if errInsert != nil {
 			log.Fatal(errInsert)
 		}
