@@ -1,6 +1,6 @@
 CREATE TABLE "medias" (
      "id" bigserial PRIMARY KEY,
-     "name" uuid NOT NULL,
+     "name" varchar NOT NULL,
      "path" varchar NOT NULL,
      "ext" varchar NOT NULL,
      "size" int NOT NULL,

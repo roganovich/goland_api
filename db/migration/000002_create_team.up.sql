@@ -7,7 +7,7 @@ CREATE TABLE teams (
     participant_count INT,
     responsible_id INT,
     disability_category VARCHAR(100),
-    logo jsonb not null default '{}'::jsonb,
+    logo VARCHAR(255),
     media jsonb not null default '[]'::jsonb,
     "status" smallint NOT NULL DEFAULT 1,
     "created_at" timestamptz NOT NULL DEFAULT (now()),

@@ -14,6 +14,25 @@ import (
 	"strings"
 )
 
+// get team by id
+func getOneMedia(db *sql.DB, fileName string) (error, models.Media) {
+	var media models.Media
+	err := db.QueryRow("SELECT * FROM medias WHERE name = $1", fileName).Scan(
+		&media.ID,
+		&media.Name,
+		&media.Path,
+		&media.Ext,
+		&media.Size,
+		&media.CreatedAt,
+	)
+
+	if  err != nil {
+		log.Fatal(err.Error())
+	}
+
+	return err, media
+}
+
 // create team
 func Preloader(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

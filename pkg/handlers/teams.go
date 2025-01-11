@@ -53,7 +53,7 @@ func GetTeams(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getOneTeam(db *sql.DB, paramId int) (error, models.Team) {
+func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
 	var team models.Team
 	err := db.QueryRow("SELECT * FROM teams WHERE id = $1", int64(paramId)).Scan(
 		&team.ID,
@@ -72,9 +72,35 @@ func getOneTeam(db *sql.DB, paramId int) (error, models.Team) {
 		&team.DeletedAt,
 		)
 
-	return err, team
-}
 
+	var teamView models.TeamView
+	teamView.ID = team.ID
+	teamView.Name = team.Name
+	teamView.Description = team.Description
+	teamView.City = team.City
+	teamView.UniformColor = team.UniformColor
+	teamView.ParticipantCount = team.ParticipantCount
+	teamView.Responsible = team.Responsible
+	teamView.DisabilityCategory = team.DisabilityCategory
+	teamView.Status = team.Status
+	teamView.CreatedAt = team.CreatedAt
+	teamView.UpdatedAt = team.UpdatedAt
+	teamView.DeletedAt = team.DeletedAt
+
+	if (team.Logo != nil){
+		var logoFile models.Media
+
+		errorMedia, logoFile := getOneMedia(db, *team.Logo)
+		if  errorMedia != nil {
+			log.Fatal(errorMedia.Error())
+		}else{
+			teamView.Logo = &logoFile
+		}
+
+	}
+
+	return err, teamView
+}
 
 // get team by id
 func GetTeam(db *sql.DB) http.HandlerFunc {
@@ -82,13 +108,14 @@ func GetTeam(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, team := getOneTeam(db, paramId)
+		errorResponse, teamView := getOneTeam(db, paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
 		}
 
-		json.NewEncoder(w).Encode(team)
+
+		json.NewEncoder(w).Encode(teamView)
 	}
 }
 
@@ -169,12 +196,12 @@ func UpdateTeam(db *sql.DB) http.HandlerFunc {
 		if err != nil {
 			log.Fatal(err)
 		}
-		errorResponse, team := getOneTeam(db, paramId)
+		errorResponse, teamView := getOneTeam(db, paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
 		}
-		json.NewEncoder(w).Encode(team)
+		json.NewEncoder(w).Encode(teamView)
 	}
 }
 
