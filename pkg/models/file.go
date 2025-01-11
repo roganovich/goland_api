@@ -5,9 +5,11 @@ import(
 )
 
 // Media - структура для медиа-файлов
-type Media struct {
-	URL      	string     	`json:"url"`
-	FileType 	string     	`json:"file_type"`
+type File struct {
+	ID      	int     	`json:"id"`
+	Name      	string    	`json:"name"`
+	Path      	string     	`json:"path"`
+	Ext 		string     	`json:"ext"`
 	Size     	int64      	`json:"size"`
 	CreatedAt 	time.Time 	`json:"created_at"`
 }

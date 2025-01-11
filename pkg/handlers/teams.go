@@ -153,11 +153,19 @@ func UpdateTeam(db *sql.DB) http.HandlerFunc {
 		team.Name = teamRequest.Name
 		team.Description = teamRequest.Description
 		team.City = teamRequest.City
+		team.Logo = teamRequest.Logo
+		team.Media = teamRequest.Media
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 		team.ID = int64(paramId)
 
-		_, err := db.Exec("UPDATE teams SET name = $1, description = $2, city = $3 WHERE id = $4", team.Name, team.Description, team.City, paramId)
+		_, err := db.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6",
+			team.Name,
+			team.Description,
+			team.City,
+			team.Logo,
+			team.Media,
+			paramId)
 		if err != nil {
 			log.Fatal(err)
 		}

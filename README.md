@@ -24,7 +24,7 @@ go build -v ./cmd/server/main.go
 
 # Миграции
 ## Создать файл миграции
-migrate create -ext sql -dir db/migration -seq create_team
+migrate create -ext sql -dir db/migration -seq create_media
 
 ## Выполнить
 migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable" -verbose up
