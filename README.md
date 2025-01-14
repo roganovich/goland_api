@@ -2,7 +2,7 @@
 `go get ./cmd/server/main.go`
 
 # Собрать приложение
-go build -v ./cmd/server/main.go
+`go build -v ./cmd/server/main.go`
 
 # Запустить приложение
 `go run ./cmd/server/main.go`

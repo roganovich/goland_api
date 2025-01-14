@@ -96,7 +96,25 @@ func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
 		}else{
 			teamView.Logo = &logoFile
 		}
+	}
 
+	if (team.Media != nil){
+		var mediaList []models.Media
+		var mediaFiles []string
+
+		err := json.Unmarshal(*team.Media, &mediaFiles)
+		if err != nil {
+			log.Fatal("Ошибка при парсинге JSON:", err)
+		}
+		for _, mediaFile := range mediaFiles {
+			errorMedia, mediaFile := getOneMedia(db, mediaFile)
+			if  errorMedia != nil {
+				log.Fatal(errorMedia.Error())
+			}else{
+				mediaList = append(mediaList, mediaFile)
+			}
+		}
+		teamView.Media = &mediaList
 	}
 
 	return err, teamView
