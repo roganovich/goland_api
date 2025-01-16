@@ -13,8 +13,17 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Документация для метода GetUsers
+// @Summary Возвращает список всех пользователей
+// @Description Получение списка всех пользователей
+// @Tags Пользователи
+// @Accept  application/json
+// @Produce  application/json
+// @Success 200 {object} []models.User
+// @Failure 400 Bad Request
+// @Failure 500 Internal Server Error
+// @Router /api/users [get]
 func GetUsers(db *sql.DB) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT * FROM users")
 		if err != nil {
@@ -55,7 +64,15 @@ func getOneUser(db *sql.DB, paramId int) (error, models.User) {
 }
 
 
-// get user by id
+// Документация для метода GetUser
+// @Summary Возвращает информацию о пользователе по ID
+// @Description Получение информации о пользователе по идентификатору
+// @Tags Пользователи
+// @Param id path int true "ID пользователя"
+// @Success 200 {object} models.User
+// @Failure 400 Bad Request
+// @Failure 404 Not Found
+// @Router /api/users/{id} [get]
 func GetUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -97,7 +114,16 @@ func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest)
 	return nil, req
 }
 
-// create user
+// Документация для метода CreateUser
+// @Summary Создание нового пользователя
+// @Description Создание нового пользователя
+// @Tags Пользователи
+// @Param createUser body models.CreateUserRequest true "Данные для создания пользователя"
+// @Consumes application/json
+// @Produces application/json
+// @Success 201 {object} models.User
+// @Failure 422 Unprocessable Entity
+// @Router /api/users [post]
 func CreateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := validateCreateUserRequest(r)
@@ -119,7 +145,18 @@ func CreateUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// update user
+// Документация для метода UpdateUser
+// @Summary Обновление существующего пользователя
+// @Description Обновление существующего пользователя
+// @Tags Пользователи
+// @Param updateUser body models.UpdateUserRequest true "Данные для обновления пользователя"
+// @Consumes application/json
+// @Produces application/json
+// @Param id path int true "ID пользователя"
+// @Success 204 No Content
+// @Failure 422 Unprocessable Entity
+// @Failure 404 Not Found
+// @Router /api/users/{id} [put]
 func UpdateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := valiUpdatedAtUserRequest(r)
@@ -148,7 +185,14 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// delete user
+// Документация для метода DeleteUser
+// @Summary Удаляет пользователя по ID
+// @Description Удаление пользователя по идентификатору
+// @Tags Пользователи
+// @Param id path int true "ID пользователя"
+// @Success 204 No Content
+// @Failure 404 Not Found
+// @Router /api/users/{id} [delete]
 func DeleteUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)

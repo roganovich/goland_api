@@ -33,7 +33,15 @@ func getOneMedia(db *sql.DB, fileName string) (error, models.Media) {
 	return err, media
 }
 
-// create team
+// @Summary Загрузить медиафайл
+// @Description Загрузка медиафайла
+// @Tags Медиафайлы
+// @Param file formData file true "Загруженный файл"
+// @Success 200 {object} models.Media
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 413 {object} models.ErrorResponse
+// @Failure 415 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
 func Preloader(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Загрузка файла

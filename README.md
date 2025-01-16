@@ -1,11 +1,11 @@
 # Получить все зависимости
-`go get ./cmd/server/main.go`
+`go get .`
 
 # Собрать приложение
-`go build -v ./cmd/server/main.go`
+`go build -v .`
 
 # Запустить приложение
-`go run ./cmd/server/main.go`
+`go run .`
 
 # Запустить контейнер Postgres
 `docker compose up -d go_db`
@@ -19,6 +19,9 @@
 # Собрать контейнер API и запустить
 `docker compose up go-app --build`
 
+# Зайти в контейнер
+docker exec -it goland_api bash
+
 # Список контейнеров
 `docker ps -a`
 
@@ -31,3 +34,6 @@ migrate create -ext sql -dir db/migration -seq create_media
 
 ## Выполнить
 migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable" -verbose up
+
+## Сгенирировать Swagger
+swag init

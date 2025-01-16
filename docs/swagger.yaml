@@ -1,0 +1,377 @@
+basePath: /api
+definitions:
+  models.CreateTeamRequest:
+    type: object
+  models.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 128
+        minLength: 3
+        type: string
+      phone:
+        maxLength: 20
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    type: object
+  models.ErrorResponse:
+    properties:
+      message:
+        type: string
+      statusCode:
+        type: integer
+    type: object
+  models.Media:
+    properties:
+      created_at:
+        type: string
+      ext:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      path:
+        type: string
+      size:
+        type: integer
+    type: object
+  models.TeamView:
+    properties:
+      city:
+        description: Город
+        type: string
+      created_at:
+        description: Дата создания
+        type: string
+      deleted_at:
+        description: Дата удаления
+        type: string
+      description:
+        description: Описание
+        type: string
+      disability_category:
+        description: Категория инвалидности
+        type: string
+      id:
+        type: integer
+      logo:
+        allOf:
+        - $ref: '#/definitions/models.Media'
+        description: Логотип
+      media:
+        description: Медиа
+        items:
+          $ref: '#/definitions/models.Media'
+        type: array
+      name:
+        description: Название
+        type: string
+      participant_count:
+        description: Кол-во участников
+        type: integer
+      responsible:
+        description: Ответственный
+        type: integer
+      status:
+        description: Статус
+        type: integer
+      uniform_color:
+        description: Цвет формы
+        type: string
+      updated_at:
+        description: Дата последнего обновления
+        type: string
+    type: object
+  models.UpdateTeamRequest:
+    type: object
+  models.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 128
+        minLength: 3
+        type: string
+      phone:
+        maxLength: 20
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    type: object
+  models.User:
+    properties:
+      created_at:
+        description: Дата создания
+        type: string
+      deleted_at:
+        description: Дата удаления
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        type: integer
+      updated_at:
+        description: Дата последнего обновления
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a sample server.
+  title: My Golang API
+  version: "1.0"
+paths:
+  /api/teams:
+    get:
+      consumes:
+      - application/json
+      description: Получение списка всех команд
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.TeamView'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "500":
+          description: Internal Server Error
+          schema:
+            type: Internal
+      summary: Возвращает список всех команд
+      tags:
+      - Команды
+    post:
+      description: Создание новой команды
+      parameters:
+      - description: Данные для создания новой команды
+        in: body
+        name: createTeam
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTeamRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.TeamView'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Создание новой команды
+      tags:
+      - Команды
+  /api/teams/{id}:
+    delete:
+      description: Удаление команды по идентификатору
+      parameters:
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Удаляет команду по ID
+      tags:
+      - Команды
+    get:
+      description: Получение информации о команде по идентификатору
+      parameters:
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TeamView'
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Возвращает информацию о команде по ID
+      tags:
+      - Команды
+    put:
+      description: Обновление существующей команды
+      parameters:
+      - description: Данные для обновления команды
+        in: body
+        name: updateTeam
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateTeamRequest'
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Обновление существующей команды
+      tags:
+      - Команды
+  /api/users:
+    get:
+      consumes:
+      - application/json
+      description: Получение списка всех пользователей
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "500":
+          description: Internal Server Error
+          schema:
+            type: Internal
+      summary: Возвращает список всех пользователей
+      tags:
+      - Пользователи
+    post:
+      description: Создание нового пользователя
+      parameters:
+      - description: Данные для создания пользователя
+        in: body
+        name: createUser
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Создание нового пользователя
+      tags:
+      - Пользователи
+  /api/users/{id}:
+    delete:
+      description: Удаление пользователя по идентификатору
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Удаляет пользователя по ID
+      tags:
+      - Пользователи
+    get:
+      description: Получение информации о пользователе по идентификатору
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Возвращает информацию о пользователе по ID
+      tags:
+      - Пользователи
+    put:
+      description: Обновление существующего пользователя
+      parameters:
+      - description: Данные для обновления пользователя
+        in: body
+        name: updateUser
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Обновление существующего пользователя
+      tags:
+      - Пользователи
+swagger: "2.0"

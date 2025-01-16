@@ -13,8 +13,17 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Документация для метода GetTeams
+// @Summary Возвращает список всех команд
+// @Description Получение списка всех команд
+// @Tags Команды
+// @Accept application/json
+// @Produces application/json
+// @Success 200 {object} []models.TeamView
+// @Failure 400 Bad Request
+// @Failure 500 Internal Server Error
+// @Router /api/teams [get]
 func GetTeams(db *sql.DB) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT * FROM teams")
 		if err != nil {
@@ -120,7 +129,15 @@ func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
 	return err, teamView
 }
 
-// get team by id
+// Документация для метода GetTeam
+// @Summary Возвращает информацию о команде по ID
+// @Description Получение информации о команде по идентификатору
+// @Tags Команды
+// @Param id path int true "ID команды"
+// @Success 200 {object} models.TeamView
+// @Failure 400 Bad Request
+// @Failure 404 Not Found
+// @Router /api/teams/{id} [get]
 func GetTeam(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -163,7 +180,16 @@ func valiUpdatedAtTeamRequest(r *http.Request) (error, models.UpdateTeamRequest)
 	return nil, req
 }
 
-// create team
+// Документация для метода CreateTeam
+// @Summary Создание новой команды
+// @Description Создание новой команды
+// @Tags Команды
+// @Param createTeam body models.CreateTeamRequest true "Данные для создания новой команды"
+// @Consumes application/json
+// @Produces application/json
+// @Success 201 {object} models.TeamView
+// @Failure 422 Unprocessable Entity
+// @Router /api/teams [post]
 func CreateTeam(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, teamRequest := validateCreateTeamRequest(r)
@@ -186,7 +212,18 @@ func CreateTeam(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// update team
+// Документация для метода UpdateTeam
+// @Summary Обновление существующей команды
+// @Description Обновление существующей команды
+// @Tags Команды
+// @Param updateTeam body models.UpdateTeamRequest true "Данные для обновления команды"
+// @Consumes application/json
+// @Produces application/json
+// @Param id path int true "ID команды"
+// @Success 204 No Content
+// @Failure 422 Unprocessable Entity
+// @Failure 404 Not Found
+// @Router /api/teams/{id} [put]
 func UpdateTeam(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, teamRequest := valiUpdatedAtTeamRequest(r)
@@ -223,7 +260,14 @@ func UpdateTeam(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// delete team
+// Документация для метода DeleteTeam
+// @Summary Удаляет команду по ID
+// @Description Удаление команды по идентификатору
+// @Tags Команды
+// @Param id path int true "ID команды"
+// @Success 204 No Content
+// @Failure 404 Not Found
+// @Router /api/teams/{id} [delete]
 func DeleteTeam(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
