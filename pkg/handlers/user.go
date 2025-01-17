@@ -8,9 +8,13 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"fmt"
+	"time"
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+
+	jwt "github.com/golang-jwt/jwt"
 )
 
 // Документация для метода GetUsers
@@ -63,7 +67,6 @@ func getOneUser(db *sql.DB, paramId int) (error, models.User) {
 	return err, user
 }
 
-
 // Документация для метода GetUser
 // @Summary Возвращает информацию о пользователе по ID
 // @Description Получение информации о пользователе по идентификатору
@@ -88,31 +91,100 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest) {
-	var req models.CreateUserRequest
-	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
-		return validation, req
-	}
-	validate := validator.New()
-	if validation := validate.Struct(req); validation != nil {
-		return validation, req
-	}
+// Документация для метода GetUser
+// @Summary Возвращает информацию о пользователе по ID
+// @Description Получение информации о пользователе по идентификатору
+// @Tags Пользователи
+// @Param id path int true "ID пользователя"
+// @Success 200 {object} models.User
+// @Failure 400 Bad Request
+// @Failure 404 Not Found
+// @Router /api/auth/info [get]
+func Info(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//vars := mux.Vars(r)
+		//paramId, _ := strconv.Atoi(vars["id"])
+		authHeader := r.Header.Get("Authorization")
+		tokenString := authHeader[len("Bearer "):]
+		token, err := ParseToken(tokenString)
+		if err != nil {
+		//	w.WriteHeader("WWW-Authenticate", "Bearer realm=\"Go JWT Auth\"")
+		//	w.WriteHeader("Content-Type", "application/json")
+		//	w.Write([]byte("Unauthorized"))
+		//	return
+		}
 
-	return nil, req
+		json.NewEncoder(w).Encode(token)
+		//
+		//w.Write([]byte("Protected Page"))
+		//
+		//errorResponse, user := getOneUser(db, paramId)
+		//if  errorResponse != nil {
+		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+		//	return
+		//}
+		//
+		//json.NewEncoder(w).Encode(user)
+	}
 }
 
-func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
-	var req models.UpdateUserRequest
-	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
-		return validation, req
-	}
-	validate := validator.New()
-	if validation := validate.Struct(req); validation != nil {
-		return validation, req
-	}
+func Auth(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//vars := mux.Vars(r)
+		//paramId, _ := strconv.Atoi(vars["id"])
+		authHeader := r.Header.Get("Authorization")
+		tokenString := authHeader[len("Bearer "):]
+		token, err := ParseToken(tokenString)
+		if err != nil {
+			//	w.WriteHeader("WWW-Authenticate", "Bearer realm=\"Go JWT Auth\"")
+			//	w.WriteHeader("Content-Type", "application/json")
+			//	w.Write([]byte("Unauthorized"))
+			//	return
+		}
 
-	return nil, req
+		json.NewEncoder(w).Encode(token)
+		//
+		//w.Write([]byte("Protected Page"))
+		//
+		//errorResponse, user := getOneUser(db, paramId)
+		//if  errorResponse != nil {
+		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+		//	return
+		//}
+		//
+		//json.NewEncoder(w).Encode(user)
+	}
 }
+
+func Refresh(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//vars := mux.Vars(r)
+		//paramId, _ := strconv.Atoi(vars["id"])
+		authHeader := r.Header.Get("Authorization")
+		tokenString := authHeader[len("Bearer "):]
+		token, err := ParseToken(tokenString)
+		if err != nil {
+			//	w.WriteHeader("WWW-Authenticate", "Bearer realm=\"Go JWT Auth\"")
+			//	w.WriteHeader("Content-Type", "application/json")
+			//	w.Write([]byte("Unauthorized"))
+			//	return
+		}
+
+		json.NewEncoder(w).Encode(token)
+		//
+		//w.Write([]byte("Protected Page"))
+		//
+		//errorResponse, user := getOneUser(db, paramId)
+		//if  errorResponse != nil {
+		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+		//	return
+		//}
+		//
+		//json.NewEncoder(w).Encode(user)
+	}
+}
+
+
 
 // Документация для метода CreateUser
 // @Summary Создание нового пользователя
@@ -121,27 +193,33 @@ func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest)
 // @Param createUser body models.CreateUserRequest true "Данные для создания пользователя"
 // @Consumes application/json
 // @Produces application/json
-// @Success 201 {object} models.User
+// @Success 201 {object} models.UserRegistrationResponse
 // @Failure 422 Unprocessable Entity
 // @Router /api/users [post]
-func CreateUser(db *sql.DB) http.HandlerFunc {
+func Registration(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := validateCreateUserRequest(r)
 		if  validation != nil {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
 		}
-		var user models.User
+		var user models.CreateUserRequest
 		user.Name = userRequest.Name
 		user.Email = userRequest.Email
 		user.Phone = userRequest.Phone
+		user.Password = userRequest.Password
 
-		err := db.QueryRow("INSERT INTO users (name, email, phone) VALUES ($1, $2, $3) RETURNING id", user.Name, user.Email, user.Phone).Scan(&user.ID)
+		err := db.QueryRow("INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING id", user.Name, user.Email, user.Phone, user.Password).Scan(&user.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		json.NewEncoder(w).Encode(user)
+		tokenString, err := getNewToken(user)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		json.NewEncoder(w).Encode(tokenString)
 	}
 }
 
@@ -214,6 +292,68 @@ func DeleteUser(db *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode("User deleted")
 		}
 	}
+}
+
+func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest) {
+	var req models.CreateUserRequest
+	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
+		return validation, req
+	}
+	validate := validator.New()
+	if validation := validate.Struct(req); validation != nil {
+		return validation, req
+	}
+
+	return nil, req
+}
+
+func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
+	var req models.UpdateUserRequest
+	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
+		return validation, req
+	}
+	validate := validator.New()
+	if validation := validate.Struct(req); validation != nil {
+		return validation, req
+	}
+
+	return nil, req
+}
+
+// getNewToken создает новый JWT-токен
+func getNewToken(user models.CreateUserRequest) (string, error) {
+	// ExpiresAt в миллисекундах от Unix epoch
+	expiresAt := time.Now().Add(time.Hour).UnixMilli()
+	claims := models.Claims{
+		Username: user.Name,
+		StandardClaims: jwt.StandardClaims{
+			Id:       	user.Email,
+			Subject:	user.Name,
+			ExpiresAt: 	expiresAt,
+		},
+	}
+	var secretKey = []byte("my_jwt_secret")
+	token := jwt.New(jwt.SigningMethodHS256)
+	token.Claims = claims
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+// ParseToken проверяет и парсит JWT-токен
+func ParseToken(tokenString string) (*jwt.Token, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		claims := token.Claims.(*models.Claims)
+		if !token.Valid || claims.Username == "" {
+			return nil, fmt.Errorf("invalid token")
+		}
+		return claims, nil
+	})
+
+	return token, err
 }
 
 

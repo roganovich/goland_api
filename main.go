@@ -31,7 +31,11 @@ func main() {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)	// Users
 	router.HandleFunc("/api/users", handlers.GetUsers(db)).Methods("GET")
 	router.HandleFunc("/api/users/{id}", handlers.GetUser(db)).Methods("GET")
-	router.HandleFunc("/api/users", handlers.CreateUser(db)).Methods("POST")
+	router.HandleFunc("/api/auth/info", handlers.Info(db)).Methods("GET")
+	router.HandleFunc("/api/auth/registration", handlers.Registration(db)).Methods("POST")
+	router.HandleFunc("/api/auth/login", handlers.Auth(db)).Methods("POST")
+	router.HandleFunc("/api/auth/refresh", handlers.Refresh(db)).Methods("POST")
+
 	router.HandleFunc("/api/users/{id}", handlers.UpdateUser(db)).Methods("PUT")
 	router.HandleFunc("/api/users/{id}", handlers.DeleteUser(db)).Methods("DELETE")
 

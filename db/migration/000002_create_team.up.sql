@@ -1,14 +1,14 @@
-CREATE TABLE teams (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    city VARCHAR(255) NOT NULL,
-    uniform_color VARCHAR(50),
-    participant_count INT,
-    responsible_id INT,
-    disability_category VARCHAR(100),
-    logo VARCHAR(255),
-    media jsonb not null default '[]'::jsonb,
+CREATE TABLE "teams" (
+    "id" bigserial PRIMARY KEY,
+    "name" varchar NOT NULL,
+    "description" text,
+    "city" varchar NOT NULL,
+    "uniform_color" varchar,
+    "participant_count" INT,
+    "responsible_id" INT,
+    "disability_category" varchar,
+    "logo" varchar,
+    "media" jsonb not null default '[]'::jsonb,
     "status" smallint NOT NULL DEFAULT 1,
     "created_at" timestamptz NOT NULL DEFAULT (now()),
     "updated_at" timestamptz NOT NULL DEFAULT (now()),
@@ -30,6 +30,6 @@ COMMENT ON COLUMN "teams"."logo" IS 'Логотип';
 COMMENT ON COLUMN "teams"."media" IS 'Медиа';
 COMMENT ON COLUMN "teams"."status" IS 'Статус';
 COMMENT ON COLUMN "teams"."created_at" IS 'Дата создания';
-COMMENT ON COLUMN "teams"."updated_at" IS 'Дата последнего обновления';
+COMMENT ON COLUMN "teams"."updated_at" IS 'Дата изменения';
 COMMENT ON COLUMN "teams"."deleted_at" IS 'Дата удаления';
 

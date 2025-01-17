@@ -1,10 +1,10 @@
 CREATE TABLE "medias" (
-     "id" bigserial PRIMARY KEY,
-     "name" varchar NOT NULL,
-     "path" varchar NOT NULL,
-     "ext" varchar NOT NULL,
-     "size" int NOT NULL,
-     "created_at" timestamptz NOT NULL DEFAULT (now())
+    "id" bigserial PRIMARY KEY,
+    "name" varchar NOT NULL,
+    "path" varchar NOT NULL,
+    "ext" varchar NOT NULL,
+    "size" int NOT NULL,
+    "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 COMMENT ON COLUMN "medias"."name" IS 'Имя файла';
