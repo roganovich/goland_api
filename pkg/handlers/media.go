@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"goland_api/pkg/models"
-	"database/sql"
+	"goland_api/pkg/database"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -15,10 +15,11 @@ import (
 )
 
 // get team by id
-func getOneMedia(db *sql.DB, fileName string) (error, models.Media) {
+func getOneMedia(fileName string) (error, models.Media) {
 	var media models.Media
-	err := db.QueryRow("SELECT * FROM medias WHERE name = $1", fileName).Scan(
+	err := database.DB.QueryRow("SELECT * FROM medias WHERE name = $1", fileName).Scan(
 		&media.ID,
+
 		&media.Name,
 		&media.Path,
 		&media.Ext,
@@ -42,7 +43,7 @@ func getOneMedia(db *sql.DB, fileName string) (error, models.Media) {
 // @Failure 413 {object} models.ErrorResponse
 // @Failure 415 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-func Preloader(db *sql.DB) http.HandlerFunc {
+func Preloader() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Загрузка файла
 		file, fileHeader, errFile := r.FormFile("file")
@@ -81,7 +82,7 @@ func Preloader(db *sql.DB) http.HandlerFunc {
 		media.Size = fileSize
 		media.CreatedAt = createdAt
 
-		errInsert := db.QueryRow("INSERT INTO medias (name, path, ext, size) VALUES ($1, $2, $3, $4) RETURNING id", media.Name, media.Path, media.Ext, media.Size).Scan(&media.ID)
+		errInsert := database.DB.QueryRow("INSERT INTO medias (name, path, ext, size) VALUES ($1, $2, $3, $4) RETURNING id", media.Name, media.Path, media.Ext, media.Size).Scan(&media.ID)
 		if errInsert != nil {
 			log.Fatal(errInsert)
 		}

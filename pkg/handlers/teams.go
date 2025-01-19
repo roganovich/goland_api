@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"goland_api/pkg/models"
-	"database/sql"
+	"goland_api/pkg/database"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -23,9 +23,9 @@ import (
 // @Failure 400 Bad Request
 // @Failure 500 Internal Server Error
 // @Router /api/teams [get]
-func GetTeams(db *sql.DB) http.HandlerFunc {
+func GetTeams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT * FROM teams")
+		rows, err := database.DB.Query("SELECT * FROM teams")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -62,9 +62,9 @@ func GetTeams(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
+func getOneTeam(paramId int) (error, models.TeamView) {
 	var team models.Team
-	err := db.QueryRow("SELECT * FROM teams WHERE id = $1", int64(paramId)).Scan(
+	err := database.DB.QueryRow("SELECT * FROM teams WHERE id = $1", int64(paramId)).Scan(
 		&team.ID,
 		&team.Name,
 		&team.Description,
@@ -99,7 +99,7 @@ func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
 	if (team.Logo != nil){
 		var logoFile models.Media
 
-		errorMedia, logoFile := getOneMedia(db, *team.Logo)
+		errorMedia, logoFile := getOneMedia(*team.Logo)
 		if  errorMedia != nil {
 			log.Fatal(errorMedia.Error())
 		}else{
@@ -116,7 +116,7 @@ func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
 			log.Fatal("Ошибка при парсинге JSON:", err)
 		}
 		for _, mediaFile := range mediaFiles {
-			errorMedia, mediaFile := getOneMedia(db, mediaFile)
+			errorMedia, mediaFile := getOneMedia(mediaFile)
 			if  errorMedia != nil {
 				log.Fatal(errorMedia.Error())
 			}else{
@@ -138,12 +138,12 @@ func getOneTeam(db *sql.DB, paramId int) (error, models.TeamView) {
 // @Failure 400 Bad Request
 // @Failure 404 Not Found
 // @Router /api/teams/{id} [get]
-func GetTeam(db *sql.DB) http.HandlerFunc {
+func GetTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, teamView := getOneTeam(db, paramId)
+		errorResponse, teamView := getOneTeam(paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -190,7 +190,7 @@ func valiUpdatedAtTeamRequest(r *http.Request) (error, models.UpdateTeamRequest)
 // @Success 201 {object} models.TeamView
 // @Failure 422 Unprocessable Entity
 // @Router /api/teams [post]
-func CreateTeam(db *sql.DB) http.HandlerFunc {
+func CreateTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, teamRequest := validateCreateTeamRequest(r)
 		if  validation != nil {
@@ -203,7 +203,7 @@ func CreateTeam(db *sql.DB) http.HandlerFunc {
 		team.Description = teamRequest.Description
 		team.City = teamRequest.City
 
-		err := db.QueryRow("INSERT INTO teams (name, description, city) VALUES ($1, $2, $3) RETURNING id", team.Name, team.Description, team.City).Scan(&team.ID)
+		err := database.DB.QueryRow("INSERT INTO teams (name, description, city) VALUES ($1, $2, $3) RETURNING id", team.Name, team.Description, team.City).Scan(&team.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -224,7 +224,7 @@ func CreateTeam(db *sql.DB) http.HandlerFunc {
 // @Failure 422 Unprocessable Entity
 // @Failure 404 Not Found
 // @Router /api/teams/{id} [put]
-func UpdateTeam(db *sql.DB) http.HandlerFunc {
+func UpdateTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, teamRequest := valiUpdatedAtTeamRequest(r)
 		if  validation != nil {
@@ -241,7 +241,7 @@ func UpdateTeam(db *sql.DB) http.HandlerFunc {
 		paramId, _ := strconv.Atoi(vars["id"])
 		team.ID = int64(paramId)
 
-		_, err := db.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6",
+		_, err := database.DB.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6",
 			team.Name,
 			team.Description,
 			team.City,
@@ -251,7 +251,7 @@ func UpdateTeam(db *sql.DB) http.HandlerFunc {
 		if err != nil {
 			log.Fatal(err)
 		}
-		errorResponse, teamView := getOneTeam(db, paramId)
+		errorResponse, teamView := getOneTeam(paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -268,13 +268,13 @@ func UpdateTeam(db *sql.DB) http.HandlerFunc {
 // @Success 204 No Content
 // @Failure 404 Not Found
 // @Router /api/teams/{id} [delete]
-func DeleteTeam(db *sql.DB) http.HandlerFunc {
+func DeleteTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
 		var team models.Team
-		err := db.QueryRow("SELECT * FROM teams WHERE id = $1", paramId).Scan(
+		err := database.DB.QueryRow("SELECT * FROM teams WHERE id = $1", paramId).Scan(
 			&team.ID,
 			&team.Name,
 			&team.Description,
@@ -294,7 +294,7 @@ func DeleteTeam(db *sql.DB) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		} else {
-			_, err := db.Exec("DELETE FROM teams WHERE id = $1", paramId)
+			_, err := database.DB.Exec("DELETE FROM teams WHERE id = $1", paramId)
 			if err != nil {
 				//todo : fix error handling
 				w.WriteHeader(http.StatusNotFound)

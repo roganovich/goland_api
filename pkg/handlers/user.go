@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"goland_api/pkg/models"
-
+	"goland_api/pkg/database"
 	"database/sql"
 	"encoding/json"
 	"log"
@@ -13,7 +13,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
-
+	"golang.org/x/crypto/bcrypt"
 	jwt "github.com/golang-jwt/jwt"
 )
 
@@ -27,18 +27,27 @@ import (
 // @Failure 400 Bad Request
 // @Failure 500 Internal Server Error
 // @Router /api/users [get]
-func GetUsers(db *sql.DB) http.HandlerFunc {
+func GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT * FROM users")
+		rows, err := database.DB.Query("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer rows.Close()
 
-		users := []models.User{}
+		users := []models.UserView{}
 		for rows.Next() {
-			var user models.User
-			if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
+			var user models.UserView
+			if err := rows.Scan(
+				&user.ID,
+				&user.Name,
+				&user.Email,
+				&user.Phone,
+				&user.City,
+				&user.Logo,
+				&user.Media,
+				&user.Status,
+				&user.CreatedAt); err != nil {
 				log.Fatal(err)
 			}
 			users = append(users, user)
@@ -51,18 +60,35 @@ func GetUsers(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getOneUser(db *sql.DB, paramId int) (error, models.User) {
+func getOneUser(paramId int) (error, models.User) {
 	var user models.User
-	err := db.QueryRow("SELECT * FROM users WHERE id = $1", int64(paramId)).Scan(
+	err := database.DB.QueryRow("SELECT * FROM users WHERE id = $1", int64(paramId)).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
 		&user.Phone,
+		&user.Password,
+		&user.City,
+		&user.Logo,
+		&user.Media,
 		&user.Status,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&user.DeletedAt,
-		)
+	)
+
+	return err, user
+}
+
+func getOneUserByEmail(paramEmail string) (error, models.CreateUserRequest) {
+	var user models.CreateUserRequest
+	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE email = $1", paramEmail).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Phone,
+		&user.Password,
+	)
 
 	return err, user
 }
@@ -76,12 +102,12 @@ func getOneUser(db *sql.DB, paramId int) (error, models.User) {
 // @Failure 400 Bad Request
 // @Failure 404 Not Found
 // @Router /api/users/{id} [get]
-func GetUser(db *sql.DB) http.HandlerFunc {
+func GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, user := getOneUser(db, paramId)
+		errorResponse, user := getOneUser(paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -100,35 +126,49 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 // @Failure 400 Bad Request
 // @Failure 404 Not Found
 // @Router /api/auth/info [get]
-func Info(db *sql.DB) http.HandlerFunc {
+func Info() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//vars := mux.Vars(r)
-		//paramId, _ := strconv.Atoi(vars["id"])
 		authHeader := r.Header.Get("Authorization")
 		tokenString := authHeader[len("Bearer "):]
 		token, err := ParseToken(tokenString)
 		if err != nil {
-		//	w.WriteHeader("WWW-Authenticate", "Bearer realm=\"Go JWT Auth\"")
-		//	w.WriteHeader("Content-Type", "application/json")
-		//	w.Write([]byte("Unauthorized"))
-		//	return
 		}
 
 		json.NewEncoder(w).Encode(token)
-		//
-		//w.Write([]byte("Protected Page"))
-		//
-		//errorResponse, user := getOneUser(db, paramId)
-		//if  errorResponse != nil {
-		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
-		//	return
-		//}
-		//
-		//json.NewEncoder(w).Encode(user)
 	}
 }
 
-func Auth(db *sql.DB) http.HandlerFunc {
+func Login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		errorValidation, userRequest := valiLoginUserRequest(r)
+		if  errorValidation != nil {
+			http.Error(w, errorValidation.Error(), http.StatusBadRequest)
+			return
+		}
+
+		errorQuery, user := getOneUserByEmail(userRequest.Email)
+		if  errorQuery != nil {
+			http.Error(w, errorQuery.Error(), http.StatusBadRequest)
+			return
+		}
+		passwordHash :=  getHashPassword(userRequest.Password)
+		checkPassword := checkPasswordHash(user.Password, passwordHash)
+
+		if checkPassword != true {
+			http.Error(w, "Invalid password", http.StatusBadRequest)
+			return
+		}
+
+		tokenString, errorToken := getNewToken(user)
+		if errorToken != nil {
+			http.Error(w, errorToken.Error(), http.StatusBadRequest)
+		}
+
+		json.NewEncoder(w).Encode(tokenString)
+	}
+}
+
+func Refresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//vars := mux.Vars(r)
 		//paramId, _ := strconv.Atoi(vars["id"])
@@ -146,35 +186,7 @@ func Auth(db *sql.DB) http.HandlerFunc {
 		//
 		//w.Write([]byte("Protected Page"))
 		//
-		//errorResponse, user := getOneUser(db, paramId)
-		//if  errorResponse != nil {
-		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
-		//	return
-		//}
-		//
-		//json.NewEncoder(w).Encode(user)
-	}
-}
-
-func Refresh(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		//vars := mux.Vars(r)
-		//paramId, _ := strconv.Atoi(vars["id"])
-		authHeader := r.Header.Get("Authorization")
-		tokenString := authHeader[len("Bearer "):]
-		token, err := ParseToken(tokenString)
-		if err != nil {
-			//	w.WriteHeader("WWW-Authenticate", "Bearer realm=\"Go JWT Auth\"")
-			//	w.WriteHeader("Content-Type", "application/json")
-			//	w.Write([]byte("Unauthorized"))
-			//	return
-		}
-
-		json.NewEncoder(w).Encode(token)
-		//
-		//w.Write([]byte("Protected Page"))
-		//
-		//errorResponse, user := getOneUser(db, paramId)
+		//errorResponse, user := getOneUser(paramId)
 		//if  errorResponse != nil {
 		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 		//	return
@@ -196,7 +208,7 @@ func Refresh(db *sql.DB) http.HandlerFunc {
 // @Success 201 {object} models.UserRegistrationResponse
 // @Failure 422 Unprocessable Entity
 // @Router /api/users [post]
-func Registration(db *sql.DB) http.HandlerFunc {
+func Registration() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := validateCreateUserRequest(r)
 		if  validation != nil {
@@ -207,9 +219,9 @@ func Registration(db *sql.DB) http.HandlerFunc {
 		user.Name = userRequest.Name
 		user.Email = userRequest.Email
 		user.Phone = userRequest.Phone
-		user.Password = userRequest.Password
+		user.Password = getHashPassword(userRequest.Password)
 
-		err := db.QueryRow("INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING id", user.Name, user.Email, user.Phone, user.Password).Scan(&user.ID)
+		err := database.DB.QueryRow("INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING id", user.Name, user.Email, user.Phone, user.Password).Scan(&user.ID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -235,7 +247,7 @@ func Registration(db *sql.DB) http.HandlerFunc {
 // @Failure 422 Unprocessable Entity
 // @Failure 404 Not Found
 // @Router /api/users/{id} [put]
-func UpdateUser(db *sql.DB) http.HandlerFunc {
+func UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		validation, userRequest := valiUpdatedAtUserRequest(r)
 		if  validation != nil {
@@ -250,11 +262,11 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 		paramId, _ := strconv.Atoi(vars["id"])
 		user.ID = paramId
 
-		_, err := db.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", user.Name, user.Email, user.Phone, paramId)
+		_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", user.Name, user.Email, user.Phone, paramId)
 		if err != nil {
 			log.Fatal(err)
 		}
-		errorResponse, user := getOneUser(db, paramId)
+		errorResponse, user := getOneUser(paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -271,18 +283,18 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 // @Success 204 No Content
 // @Failure 404 Not Found
 // @Router /api/users/{id} [delete]
-func DeleteUser(db *sql.DB) http.HandlerFunc {
+func DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
 		var user models.User
-		err := db.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
+		err := database.DB.QueryRow("SELECT * FROM users WHERE id = $1", paramId).Scan(&user.ID, &user.Name, &user.Email, &user.Phone, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		} else {
-			_, err := db.Exec("DELETE FROM users WHERE id = $1", paramId)
+			_, err := database.DB.Exec("DELETE FROM users WHERE id = $1", paramId)
 			if err != nil {
 				//todo : fix error handling
 				w.WriteHeader(http.StatusNotFound)
@@ -294,12 +306,49 @@ func DeleteUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func isUniqueEmail(fl validator.FieldLevel) bool {
+	email := fl.Field().String()
+	var user models.CreateUserRequest
+	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE email = $1", email).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Phone,
+		&user.Password,
+	)
+	if err == sql.ErrNoRows {
+		return true
+	}
+	return false
+}
+
+func isUniquePhone(fl validator.FieldLevel) bool {
+	phone := fl.Field().String()
+	var user models.CreateUserRequest
+	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE phone = $1", phone).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Phone,
+		&user.Password,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err == sql.ErrNoRows {
+		return true
+	}
+	return false
+}
+
 func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest) {
 	var req models.CreateUserRequest
 	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
 		return validation, req
 	}
 	validate := validator.New()
+	validate.RegisterValidation("email", isUniqueEmail)
+	validate.RegisterValidation("phone", isUniquePhone)
 	if validation := validate.Struct(req); validation != nil {
 		return validation, req
 	}
@@ -319,6 +368,21 @@ func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest)
 
 	return nil, req
 }
+
+func valiLoginUserRequest(r *http.Request) (error, models.LoginUserRequest) {
+	var req models.LoginUserRequest
+	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
+		return validation, req
+	}
+	validate := validator.New()
+	if validation := validate.Struct(req); validation != nil {
+		return validation, req
+	}
+
+	return nil, req
+}
+
+
 
 // getNewToken создает новый JWT-токен
 func getNewToken(user models.CreateUserRequest) (string, error) {
@@ -356,4 +420,15 @@ func ParseToken(tokenString string) (*jwt.Token, error) {
 	return token, err
 }
 
+func getHashPassword(password string) string {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(bytes)
+}
 
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}

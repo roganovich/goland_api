@@ -1,11 +1,12 @@
 package main
 
 import (
+
 	"goland_api/pkg/handlers"
-	"database/sql"
+	"goland_api/pkg/database"
 	"log"
-	"net/http"
 	"os"
+	"net/http"
 	"github.com/gorilla/mux"
 	"github.com/swaggo/http-swagger"
 	_ "goland_api/docs"
@@ -17,37 +18,34 @@ import (
 // @host localhost:8080
 // @BasePath /api
 func main() {
-	//connect to database
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// InitDB
+	dataSourceName := os.Getenv("DATABASE_URL")
+	database.InitDB(dataSourceName)
 
 	router := mux.NewRouter()
 	// Регистрация маршрутов
 	// Swagger
 	// Устанавливаем маршрут для Swagger UI
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)	// Users
-	router.HandleFunc("/api/users", handlers.GetUsers(db)).Methods("GET")
-	router.HandleFunc("/api/users/{id}", handlers.GetUser(db)).Methods("GET")
-	router.HandleFunc("/api/auth/info", handlers.Info(db)).Methods("GET")
-	router.HandleFunc("/api/auth/registration", handlers.Registration(db)).Methods("POST")
-	router.HandleFunc("/api/auth/login", handlers.Auth(db)).Methods("POST")
-	router.HandleFunc("/api/auth/refresh", handlers.Refresh(db)).Methods("POST")
+	router.HandleFunc("/api/users", handlers.GetUsers()).Methods("GET")
+	router.HandleFunc("/api/users/{id}", handlers.GetUser()).Methods("GET")
+	router.HandleFunc("/api/auth/info", handlers.Info()).Methods("GET")
+	router.HandleFunc("/api/auth/registration", handlers.Registration()).Methods("POST")
+	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST")
+	router.HandleFunc("/api/auth/refresh", handlers.Refresh()).Methods("POST")
 
-	router.HandleFunc("/api/users/{id}", handlers.UpdateUser(db)).Methods("PUT")
-	router.HandleFunc("/api/users/{id}", handlers.DeleteUser(db)).Methods("DELETE")
+	router.HandleFunc("/api/users/{id}", handlers.UpdateUser()).Methods("PUT")
+	router.HandleFunc("/api/users/{id}", handlers.DeleteUser()).Methods("DELETE")
 
 	// Teams
-	router.HandleFunc("/api/teams", handlers.GetTeams(db)).Methods("GET")
-	router.HandleFunc("/api/teams/{id}", handlers.GetTeam(db)).Methods("GET")
-	router.HandleFunc("/api/teams", handlers.CreateTeam(db)).Methods("POST")
-	router.HandleFunc("/api/teams/{id}", handlers.UpdateTeam(db)).Methods("PUT")
-	router.HandleFunc("/api/teams/{id}", handlers.DeleteTeam(db)).Methods("DELETE")
+	router.HandleFunc("/api/teams", handlers.GetTeams()).Methods("GET")
+	router.HandleFunc("/api/teams/{id}", handlers.GetTeam()).Methods("GET")
+	router.HandleFunc("/api/teams", handlers.CreateTeam()).Methods("POST")
+	router.HandleFunc("/api/teams/{id}", handlers.UpdateTeam()).Methods("PUT")
+	router.HandleFunc("/api/teams/{id}", handlers.DeleteTeam()).Methods("DELETE")
 
 	// Media
-	router.HandleFunc("/api/media/preloader", handlers.Preloader(db)).Methods("POST")
+	router.HandleFunc("/api/media/preloader", handlers.Preloader()).Methods("POST")
 
 	//start server
 	log.Fatal(http.ListenAndServe(":8000", handlers.JsonContentTypeMiddleware(router)))
