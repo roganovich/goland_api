@@ -28,7 +28,7 @@ func getOneMedia(fileName string) (error, models.Media) {
 	)
 
 	if  err != nil {
-		log.Fatal(err.Error())
+		log.Println(err.Error())
 	}
 
 	return err, media
@@ -48,7 +48,7 @@ func Preloader() http.HandlerFunc {
 		// Загрузка файла
 		file, fileHeader, errFile := r.FormFile("file")
 		if errFile != nil {
-			log.Fatal("Не удалось прочитать файл")
+			log.Println("Не удалось прочитать файл")
 			http.Error(w, "Не удалось прочитать файл", http.StatusBadRequest)
 			return
 		}
@@ -59,7 +59,7 @@ func Preloader() http.HandlerFunc {
 
 		f, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
 		if err != nil {
-			log.Fatal("Не удалось открыть файл")
+			log.Println("Не удалось открыть файл")
 			http.Error(w, "Не удалось открыть файл", http.StatusInternalServerError)
 			return
 		}
@@ -67,7 +67,7 @@ func Preloader() http.HandlerFunc {
 
 		fileSize, err := io.Copy(f, file)
 		if err != nil {
-			log.Fatal("Не удалось скопировать файл")
+			log.Println("Не удалось скопировать файл")
 			http.Error(w, "Не удалось скопировать файл", http.StatusInternalServerError)
 			return
 		}
@@ -84,7 +84,7 @@ func Preloader() http.HandlerFunc {
 
 		errInsert := database.DB.QueryRow("INSERT INTO medias (name, path, ext, size) VALUES ($1, $2, $3, $4) RETURNING id", media.Name, media.Path, media.Ext, media.Size).Scan(&media.ID)
 		if errInsert != nil {
-			log.Fatal(errInsert)
+			log.Println(errInsert)
 		}
 
 		json.NewEncoder(w).Encode(media)

@@ -14,6 +14,7 @@ CREATE TABLE "users" (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email_phone ON users (email, phone);
+CREATE UNIQUE INDEX users_phone_unique ON users (phone);
 CREATE UNIQUE INDEX users_email_unique ON users (email);
 
 COMMENT ON COLUMN "users"."name" IS 'ФИО';

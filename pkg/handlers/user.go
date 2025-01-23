@@ -31,7 +31,7 @@ func GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := database.DB.Query("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users")
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		defer rows.Close()
 
@@ -48,12 +48,12 @@ func GetUsers() http.HandlerFunc {
 				&user.Media,
 				&user.Status,
 				&user.CreatedAt); err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 			users = append(users, user)
 		}
 		if err := rows.Err(); err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		json.NewEncoder(w).Encode(users)
@@ -196,8 +196,6 @@ func Refresh() http.HandlerFunc {
 	}
 }
 
-
-
 // Документация для метода CreateUser
 // @Summary Создание нового пользователя
 // @Description Создание нового пользователя
@@ -210,11 +208,38 @@ func Refresh() http.HandlerFunc {
 // @Router /api/users [post]
 func Registration() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, userRequest := validateCreateUserRequest(r)
-		if  validation != nil {
-			http.Error(w, validation.Error(), http.StatusBadRequest)
+		errValidate, userRequest := validateCreateUserRequest(r)
+
+		if errValidate != nil {
+			// Преобразуем ошибки валидации в JSON
+			var validationErrors []models.ValidationErrorResponse
+			for _, errValidate := range errValidate.(validator.ValidationErrors) {
+				validationErrors = append(validationErrors, models.ValidationErrorResponse{
+					Field:   errValidate.Field(),
+					Message: fmt.Sprintf("Ошибка в поле '%s': '%s'", errValidate.Field(), errValidate.Tag()),
+				})
+			}
+			// Создаем структуру для ответа с ошибкой
+			errorData := models.ErrorResponse{
+				StatusCode:  http.StatusBadRequest,
+				Message: "Возникла ошибка при регистрации",
+				Errors: validationErrors,
+			}
+			// Сериализуем ошибки в JSON
+			jsonResponse, err := json.Marshal(errorData)
+			if err != nil {
+				http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+				return
+			}
+			// Устанавливаем заголовок Content-Type
+			w.Header().Set("Content-Type", "application/json")
+			// Устанавливаем код состояния HTTP
+			w.WriteHeader(http.StatusBadRequest)
+			// Отправляем JSON-ответ
+			w.Write(jsonResponse)
 			return
 		}
+
 		var user models.CreateUserRequest
 		user.Name = userRequest.Name
 		user.Email = userRequest.Email
@@ -223,15 +248,18 @@ func Registration() http.HandlerFunc {
 
 		err := database.DB.QueryRow("INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING id", user.Name, user.Email, user.Phone, user.Password).Scan(&user.ID)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, "Возникла ошибка при регистрации", http.StatusBadRequest)
+			return
 		}
 
 		tokenString, err := getNewToken(user)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, "Возникла ошибка при регистрации", http.StatusBadRequest)
+			return
 		}
 
 		json.NewEncoder(w).Encode(tokenString)
+		return
 	}
 }
 
@@ -249,7 +277,7 @@ func Registration() http.HandlerFunc {
 // @Router /api/users/{id} [put]
 func UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, userRequest := valiUpdatedAtUserRequest(r)
+		validation, userRequest := validateUpdatedAtUserRequest(r)
 		if  validation != nil {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
@@ -264,7 +292,7 @@ func UpdateUser() http.HandlerFunc {
 
 		_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4", user.Name, user.Email, user.Phone, paramId)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		errorResponse, user := getOneUser(paramId)
 		if  errorResponse != nil {
@@ -272,6 +300,7 @@ func UpdateUser() http.HandlerFunc {
 			return
 		}
 		json.NewEncoder(w).Encode(user)
+		return
 	}
 }
 
@@ -308,6 +337,9 @@ func DeleteUser() http.HandlerFunc {
 
 func isUniqueEmail(fl validator.FieldLevel) bool {
 	email := fl.Field().String()
+	//log.Println("isUniqueEmail")
+	//log.Println(email)
+
 	var user models.CreateUserRequest
 	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE email = $1", email).Scan(
 		&user.ID,
@@ -324,6 +356,9 @@ func isUniqueEmail(fl validator.FieldLevel) bool {
 
 func isUniquePhone(fl validator.FieldLevel) bool {
 	phone := fl.Field().String()
+	//log.Println("isUniquePhone")
+	//log.Println(phone)
+
 	var user models.CreateUserRequest
 	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE phone = $1", phone).Scan(
 		&user.ID,
@@ -332,9 +367,6 @@ func isUniquePhone(fl validator.FieldLevel) bool {
 		&user.Phone,
 		&user.Password,
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
 	if err == sql.ErrNoRows {
 		return true
 	}
@@ -342,26 +374,44 @@ func isUniquePhone(fl validator.FieldLevel) bool {
 }
 
 func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest) {
-	var req models.CreateUserRequest
-	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
-		return validation, req
+	var userRequest models.CreateUserRequest
+
+	// Парсим JSON из тела запроса
+	if errJson := json.NewDecoder(r.Body).Decode(&userRequest); errJson != nil {
+		fmt.Println("Неверный формат JSON")
+		return nil, userRequest
 	}
+
+	// Вывод в формате JSON
+	_, errJsonData := json.MarshalIndent(userRequest, "", "  ")
+	if errJsonData != nil {
+		fmt.Println("Ошибка при преобразовании в JSON:", errJsonData)
+	}
+	//fmt.Println(string(jsonData))
 	validate := validator.New()
 	validate.RegisterValidation("email", isUniqueEmail)
 	validate.RegisterValidation("phone", isUniquePhone)
-	if validation := validate.Struct(req); validation != nil {
-		return validation, req
+	errValidate := validate.Struct(userRequest)
+	if errValidate != nil {
+		// Если есть ошибки валидации, выводим их
+		//for _, errValidate := range errValidate.(validator.ValidationErrors) {
+		//	fmt.Println("Ошибка в поле '" + errValidate.Field() + "': '" + errValidate.Tag() + "'")
+		//}
+		return errValidate, userRequest
+	} else {
+		fmt.Println("Валидация прошла успешно!")
+		return nil, userRequest
 	}
 
-	return nil, req
 }
 
-func valiUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
+func validateUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
 	var req models.UpdateUserRequest
 	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
 		return validation, req
 	}
 	validate := validator.New()
+
 	if validation := validate.Struct(req); validation != nil {
 		return validation, req
 	}
@@ -381,8 +431,6 @@ func valiLoginUserRequest(r *http.Request) (error, models.LoginUserRequest) {
 
 	return nil, req
 }
-
-
 
 // getNewToken создает новый JWT-токен
 func getNewToken(user models.CreateUserRequest) (string, error) {
@@ -423,7 +471,7 @@ func ParseToken(tokenString string) (*jwt.Token, error) {
 func getHashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	return string(bytes)
 }

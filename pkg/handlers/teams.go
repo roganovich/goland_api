@@ -27,7 +27,7 @@ func GetTeams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := database.DB.Query("SELECT * FROM teams")
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		defer rows.Close()
 
@@ -50,12 +50,12 @@ func GetTeams() http.HandlerFunc {
 				&team.UpdatedAt,
 				&team.DeletedAt,
 				); err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 			teams = append(teams, team)
 		}
 		if err := rows.Err(); err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		json.NewEncoder(w).Encode(teams)
@@ -101,7 +101,7 @@ func getOneTeam(paramId int) (error, models.TeamView) {
 
 		errorMedia, logoFile := getOneMedia(*team.Logo)
 		if  errorMedia != nil {
-			log.Fatal(errorMedia.Error())
+			log.Println(errorMedia.Error())
 		}else{
 			teamView.Logo = &logoFile
 		}
@@ -113,12 +113,12 @@ func getOneTeam(paramId int) (error, models.TeamView) {
 
 		err := json.Unmarshal(*team.Media, &mediaFiles)
 		if err != nil {
-			log.Fatal("Ошибка при парсинге JSON:", err)
+			log.Println("Ошибка при парсинге JSON:", err)
 		}
 		for _, mediaFile := range mediaFiles {
 			errorMedia, mediaFile := getOneMedia(mediaFile)
 			if  errorMedia != nil {
-				log.Fatal(errorMedia.Error())
+				log.Println(errorMedia.Error())
 			}else{
 				mediaList = append(mediaList, mediaFile)
 			}
@@ -205,7 +205,7 @@ func CreateTeam() http.HandlerFunc {
 
 		err := database.DB.QueryRow("INSERT INTO teams (name, description, city) VALUES ($1, $2, $3) RETURNING id", team.Name, team.Description, team.City).Scan(&team.ID)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		json.NewEncoder(w).Encode(team)
@@ -249,7 +249,7 @@ func UpdateTeam() http.HandlerFunc {
 			team.Media,
 			paramId)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		errorResponse, teamView := getOneTeam(paramId)
 		if  errorResponse != nil {
