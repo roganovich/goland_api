@@ -22,22 +22,24 @@ func main() {
 	dataSourceName := os.Getenv("DATABASE_URL")
 	database.InitDB(dataSourceName)
 
-	router := mux.NewRouter()
 	// Регистрация маршрутов
+	router := mux.NewRouter()
 	// Swagger
-	// Устанавливаем маршрут для Swagger UI
-	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)	// Users
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	// Участники
 	router.HandleFunc("/api/users", handlers.GetUsers()).Methods("GET")
 	router.HandleFunc("/api/users/{id}", handlers.GetUser()).Methods("GET")
-	router.HandleFunc("/api/auth/info", handlers.Info()).Methods("GET")
-	router.HandleFunc("/api/auth/registration", handlers.Registration()).Methods("POST")
+
+	// Кабинет
+	router.HandleFunc("/api/auth/info", handlers.InfoUser()).Methods("GET")
+	router.HandleFunc("/api/auth/create", handlers.CreateUser()).Methods("POST")
+	router.HandleFunc("/api/auth/update", handlers.UpdateUser()).Methods("PUT")
 	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST")
 	router.HandleFunc("/api/auth/refresh", handlers.Refresh()).Methods("POST")
+	//router.HandleFunc("/api/auth", handlers.DeleteUser()).Methods("DELETE")
 
-	router.HandleFunc("/api/users/{id}", handlers.UpdateUser()).Methods("PUT")
-	router.HandleFunc("/api/users/{id}", handlers.DeleteUser()).Methods("DELETE")
-
-	// Teams
+	// Команды
 	router.HandleFunc("/api/teams", handlers.GetTeams()).Methods("GET")
 	router.HandleFunc("/api/teams/{id}", handlers.GetTeam()).Methods("GET")
 	router.HandleFunc("/api/teams", handlers.CreateTeam()).Methods("POST")

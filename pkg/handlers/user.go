@@ -60,7 +60,23 @@ func GetUsers() http.HandlerFunc {
 	}
 }
 
-func getOneUser(paramId int) (error, models.UserView) {
+func getUserFromToken(token *jwt.Token) (error, *models.UserView) {
+	// Извлекаем claims
+	if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
+		// Получаем значение jti
+		userEmail := claims.Id // jti хранится в поле Id структуры Claims
+		errorResponse, userView := getUserViewByEmail(userEmail)
+		if  errorResponse != nil {
+			return errorResponse, nil
+		}
+
+		return nil, &userView
+	}
+
+	return fmt.Errorf("Не смог прочитать токен"), nil
+}
+
+func getUserViewById(paramId int) (error, models.UserView) {
 	var userView models.UserView
 	err := database.DB.QueryRow("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users WHERE id = $1", int64(paramId)).Scan(
 		&userView.ID,
@@ -77,7 +93,24 @@ func getOneUser(paramId int) (error, models.UserView) {
 	return err, userView
 }
 
-func getOneUserByEmail(paramEmail string) (error, models.CreateUserRequest) {
+func getUserViewByEmail(paramEmail string) (error, models.UserView) {
+	var userView models.UserView
+	err := database.DB.QueryRow("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users WHERE email = $1", paramEmail).Scan(
+		&userView.ID,
+		&userView.Name,
+		&userView.Email,
+		&userView.Phone,
+		&userView.City,
+		&userView.Logo,
+		&userView.Media,
+		&userView.Status,
+		&userView.CreatedAt,
+	)
+
+	return err, userView
+}
+
+func getUserViewByIdByEmail(paramEmail string) (error, models.CreateUserRequest) {
 	var user models.CreateUserRequest
 	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE email = $1", paramEmail).Scan(
 		&user.ID,
@@ -104,7 +137,7 @@ func GetUser() http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, userView := getOneUser(paramId)
+		errorResponse, userView := getUserViewById(paramId)
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -122,16 +155,24 @@ func GetUser() http.HandlerFunc {
 // @Success 200 {object} models.User
 // @Failure 400 Bad Request
 // @Failure 404 Not Found
-// @Router /api/auth/info [get]
-func Info() http.HandlerFunc {
+// @Router /api/auth [get]
+func InfoUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		tokenString := authHeader[len("Bearer "):]
-		token, err := ParseToken(tokenString)
-		if err != nil {
+		token, errToken := ParseToken(tokenString)
+		if errToken != nil {
+			http.Error(w, "Неверный токен", http.StatusBadRequest)
+			return
 		}
 
-		json.NewEncoder(w).Encode(token)
+		errorResponse, userView := getUserFromToken(token)
+		if  errorResponse != nil {
+			http.Error(w, "Неверный токен", http.StatusBadRequest)
+			return
+		}
+		json.NewEncoder(w).Encode(userView)
+		return
 	}
 }
 
@@ -143,13 +184,13 @@ func Login() http.HandlerFunc {
 			return
 		}
 
-		errorQuery, user := getOneUserByEmail(userRequest.Email)
+		errorQuery, user := getUserViewByIdByEmail(userRequest.Email)
 		if  errorQuery != nil {
 			http.Error(w, errorQuery.Error(), http.StatusBadRequest)
 			return
 		}
-		passwordHash :=  getHashPassword(userRequest.Password)
-		checkPassword := checkPasswordHash(user.Password, passwordHash)
+
+		checkPassword := checkPasswordHash(userRequest.Password, user.Password)
 
 		if checkPassword != true {
 			http.Error(w, "Invalid password", http.StatusBadRequest)
@@ -167,29 +208,24 @@ func Login() http.HandlerFunc {
 
 func Refresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//vars := mux.Vars(r)
-		//paramId, _ := strconv.Atoi(vars["id"])
 		authHeader := r.Header.Get("Authorization")
 		tokenString := authHeader[len("Bearer "):]
-		token, err := ParseToken(tokenString)
-		if err != nil {
-			//	w.WriteHeader("WWW-Authenticate", "Bearer realm=\"Go JWT Auth\"")
-			//	w.WriteHeader("Content-Type", "application/json")
-			//	w.Write([]byte("Unauthorized"))
-			//	return
+		token, errToken := ParseToken(tokenString)
+		if errToken != nil {
+			http.Error(w, "Неверный токен", http.StatusBadRequest)
+		}
+		errorResponse, user := getUserFromToken(token)
+		if  errorResponse != nil {
+			http.Error(w, "Такого пользователя не существует", http.StatusBadRequest)
+			return
 		}
 
-		json.NewEncoder(w).Encode(token)
-		//
-		//w.Write([]byte("Protected Page"))
-		//
-		//errorResponse, user := getOneUser(paramId)
-		//if  errorResponse != nil {
-		//	http.Error(w, errorResponse.Error(), http.StatusBadRequest)
-		//	return
-		//}
-		//
-		//json.NewEncoder(w).Encode(user)
+		tokenString, errorToken := getNewToken(user.Name, user.Email)
+		if errorToken != nil {
+			http.Error(w, errorToken.Error(), http.StatusBadRequest)
+		}
+
+		json.NewEncoder(w).Encode(tokenString)
 	}
 }
 
@@ -202,8 +238,8 @@ func Refresh() http.HandlerFunc {
 // @Produces application/json
 // @Success 201 {object} models.UserRegistrationResponse
 // @Failure 422 Unprocessable Entity
-// @Router /api/users [post]
-func Registration() http.HandlerFunc {
+// @Router /api/auth [post]
+func CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		errValidate, userRequest := validateCreateUserRequest(r)
 
@@ -271,10 +307,10 @@ func Registration() http.HandlerFunc {
 // @Success 204 No Content
 // @Failure 422 Unprocessable Entity
 // @Failure 404 Not Found
-// @Router /api/users/{id} [put]
+// @Router /api/users [put]
 func UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errValidate, userRequest := validateUpdatedAtUserRequest(r)
+		errValidate, userRequest, userView := validateUpdatedAtUserRequest(r)
 		if errValidate != nil {
 			// Преобразуем ошибки валидации в JSON
 			var validationErrors []models.ValidationErrorResponse
@@ -305,29 +341,28 @@ func UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		var user models.User
-		user.Name = userRequest.Name
-		user.Email = userRequest.Email
-		user.Phone = userRequest.Phone
-		user.Password = getHashPassword(userRequest.Password)
-		user.ID = userRequest.ID
+		if (userView != nil && userRequest != nil){
+			userView.Name = userRequest.Name
+			userView.Email = userRequest.Email
+			userView.Phone = userRequest.Phone
+			userPassword := getHashPassword(userRequest.Password)
 
-		_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3, password = $4 WHERE id = $5",
-			user.Name,
-			user.Email,
-			user.Phone,
-			user.Password,
-			userRequest.ID)
+			_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3, password = $4 WHERE id = $5",
+				userView.Name,
+				userView.Email,
+				userView.Phone,
+				userPassword,
+				userRequest.ID)
 
-		if err != nil {
-			log.Println(err)
-		}
-		errorResponse, userView := getOneUser(userRequest.ID)
-		if  errorResponse != nil {
-			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+			if err != nil {
+				log.Println(err)
+			}
+
+			json.NewEncoder(w).Encode(userView)
 			return
 		}
-		json.NewEncoder(w).Encode(userView)
+
+		http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
 		return
 	}
 }
@@ -365,8 +400,6 @@ func DeleteUser() http.HandlerFunc {
 
 func isUniqueEmail(fl validator.FieldLevel) bool {
 	email := fl.Field().String()
-	//log.Println("isUniqueEmail")
-	//log.Println(email)
 
 	var checkUser models.CreateUserRequest
 	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE email = $1", email).Scan(
@@ -384,8 +417,6 @@ func isUniqueEmail(fl validator.FieldLevel) bool {
 
 func isUniquePhone(fl validator.FieldLevel) bool {
 	phone := fl.Field().String()
-	//log.Println("isUniquePhone")
-	//log.Println(phone)
 
 	var checkUser models.CreateUserRequest
 	err := database.DB.QueryRow("SELECT id, name, email, phone, password FROM users WHERE phone = $1", phone).Scan(
@@ -466,16 +497,30 @@ func isUniquePhoneFactory(userRequest models.UpdateUserRequest) validator.Func {
 	}
 }
 
-func validateUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequest) {
+func validateUpdatedAtUserRequest(r *http.Request) (error, *models.UpdateUserRequest, *models.UserView) {
+	authHeader := r.Header.Get("Authorization")
+	tokenString := authHeader[len("Bearer "):]
+	token, errToken := ParseToken(tokenString)
+
+	if errToken != nil {
+		fmt.Println("Неверный токен")
+		return errToken, nil, nil
+	}
+
+	errorResponse, userView := getUserFromToken(token)
+	if  errorResponse != nil {
+		fmt.Println("Не смог получить User из токена")
+		return errToken, nil, nil
+	}
+
 	var userRequest models.UpdateUserRequest
 	// Парсим JSON из тела запроса
 	if errJson := json.NewDecoder(r.Body).Decode(&userRequest); errJson != nil {
 		fmt.Println("Неверный формат запроса JSON")
-		return nil, userRequest
+		return errJson, nil, nil
 	}
-	vars := mux.Vars(r)
-	paramId, _ := strconv.Atoi(vars["id"])
-	userRequest.ID = paramId
+
+	userRequest.ID = userView.ID
 
 	validate := validator.New()
 	validate.RegisterValidation("email", isUniqueEmailFactory(userRequest))
@@ -483,15 +528,10 @@ func validateUpdatedAtUserRequest(r *http.Request) (error, models.UpdateUserRequ
 
 	errValidate := validate.Struct(userRequest)
 	if errValidate != nil {
-		// Если есть ошибки валидации, выводим их
-		//for _, errValidate := range errValidate.(validator.ValidationErrors) {
-		//	fmt.Println("Ошибка в поле '" + errValidate.Field() + "': '" + errValidate.Tag() + "'")
-		//}
-		return errValidate, userRequest
-	} else {
-		fmt.Println("Валидация прошла успешно!")
-		return nil, userRequest
+		return errValidate, nil, nil
 	}
+
+	return nil, &userRequest, userView
 }
 
 func validateLoginUserRequest(r *http.Request) (error, models.LoginUserRequest) {
@@ -519,6 +559,10 @@ func getNewToken(name string, email string) (string, error) {
 			ExpiresAt: 	expiresAt,
 		},
 	}
+	/**
+	* TODO
+	* вынести в ENV
+	*/
 	var secretKey = []byte("my_jwt_secret")
 	token := jwt.New(jwt.SigningMethodHS256)
 	token.Claims = claims
@@ -532,19 +576,31 @@ func getNewToken(name string, email string) (string, error) {
 
 // ParseToken проверяет и парсит JWT-токен
 func ParseToken(tokenString string) (*jwt.Token, error) {
+	var secretKey = []byte("my_jwt_secret")
+
+	// Парсим токен
 	token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		claims := token.Claims.(*models.Claims)
-		if !token.Valid || claims.Username == "" {
-			return nil, fmt.Errorf("invalid token")
-		}
-		return claims, nil
+		// Возвращаем ключ для проверки подписи
+		return []byte(secretKey), nil
 	})
+	if err != nil {
+		log.Fatal("Ошибка при парсинге токена:", err)
+	}
+
+	// Извлекаем claims
+	if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
+		// Получаем значение jti
+		jti := claims.Id // jti хранится в поле Id структуры StandardClaims
+		fmt.Println("jti:", jti)
+	} else {
+		log.Fatal("Неверный токен или claims")
+	}
 
 	return token, err
 }
 
 func getHashPassword(password string) string {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Println(err)
 	}
@@ -555,3 +611,4 @@ func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
+
