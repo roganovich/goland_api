@@ -31,7 +31,7 @@ func GetTeams() http.HandlerFunc {
 		}
 		defer rows.Close()
 
-		teams := []models.Team{}
+		teams := []models.TeamView{}
 		for rows.Next() {
 			var team models.Team
 			if err := rows.Scan(
@@ -52,7 +52,55 @@ func GetTeams() http.HandlerFunc {
 				); err != nil {
 				log.Println(err)
 			}
-			teams = append(teams, team)
+
+			errorResponsible, responsibleUser := getUserViewById(team.Responsible)
+			if  errorResponsible != nil {
+				log.Println(errorResponsible.Error())
+			}
+
+			var teamView models.TeamView
+			teamView.ID = team.ID
+			teamView.Name = team.Name
+			teamView.Description = team.Description
+			teamView.City = team.City
+			teamView.UniformColor = team.UniformColor
+			teamView.ParticipantCount = team.ParticipantCount
+			teamView.Responsible = responsibleUser
+			teamView.DisabilityCategory = team.DisabilityCategory
+			teamView.Status = team.Status
+			teamView.CreatedAt = team.CreatedAt
+
+			if (team.Logo != nil){
+				var logoFile models.Media
+
+				errorMedia, logoFile := getOneMedia(*team.Logo)
+				if  errorMedia != nil {
+					log.Println(errorMedia.Error())
+				}else{
+					teamView.Logo = &logoFile
+				}
+			}
+
+			if (team.Media != nil){
+				var mediaList []models.Media
+				var mediaFiles []string
+
+				err := json.Unmarshal(*team.Media, &mediaFiles)
+				if err != nil {
+					log.Println("Ошибка при парсинге JSON:", err)
+				}
+				for _, mediaFile := range mediaFiles {
+					errorMedia, mediaFile := getOneMedia(mediaFile)
+					if  errorMedia != nil {
+						log.Println(errorMedia.Error())
+					}else{
+						mediaList = append(mediaList, mediaFile)
+					}
+				}
+				teamView.Media = &mediaList
+			}
+
+			teams = append(teams, teamView)
 		}
 		if err := rows.Err(); err != nil {
 			log.Println(err)
@@ -62,9 +110,9 @@ func GetTeams() http.HandlerFunc {
 	}
 }
 
-func getOneTeam(paramId int) (error, models.TeamView) {
+func getOneTeam(paramId int64) (error, models.TeamView) {
 	var team models.Team
-	err := database.DB.QueryRow("SELECT * FROM teams WHERE id = $1", int64(paramId)).Scan(
+	err := database.DB.QueryRow("SELECT * FROM teams WHERE id = $1", paramId).Scan(
 		&team.ID,
 		&team.Name,
 		&team.Description,
@@ -82,6 +130,11 @@ func getOneTeam(paramId int) (error, models.TeamView) {
 		)
 
 
+	errorResponsible, responsibleUser := getUserViewById(team.Responsible)
+	if  errorResponsible != nil {
+		log.Println(errorResponsible.Error())
+	}
+
 	var teamView models.TeamView
 	teamView.ID = team.ID
 	teamView.Name = team.Name
@@ -89,12 +142,10 @@ func getOneTeam(paramId int) (error, models.TeamView) {
 	teamView.City = team.City
 	teamView.UniformColor = team.UniformColor
 	teamView.ParticipantCount = team.ParticipantCount
-	teamView.Responsible = team.Responsible
+	teamView.Responsible = responsibleUser
 	teamView.DisabilityCategory = team.DisabilityCategory
 	teamView.Status = team.Status
 	teamView.CreatedAt = team.CreatedAt
-	teamView.UpdatedAt = team.UpdatedAt
-	teamView.DeletedAt = team.DeletedAt
 
 	if (team.Logo != nil){
 		var logoFile models.Media
@@ -143,7 +194,7 @@ func GetTeam() http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, teamView := getOneTeam(paramId)
+		errorResponse, teamView := getOneTeam(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -167,7 +218,7 @@ func validateCreateTeamRequest(r *http.Request) (error, models.CreateTeamRequest
 	return nil, req
 }
 
-func valiUpdatedAtTeamRequest(r *http.Request) (error, models.UpdateTeamRequest) {
+func validateUpdatedAtTeamRequest(r *http.Request) (error, models.UpdateTeamRequest) {
 	var req models.UpdateTeamRequest
 	if validation := json.NewDecoder(r.Body).Decode(&req); validation != nil {
 		return validation, req
@@ -202,13 +253,27 @@ func CreateTeam() http.HandlerFunc {
 		team.Name = teamRequest.Name
 		team.Description = teamRequest.Description
 		team.City = teamRequest.City
+		team.UniformColor = teamRequest.UniformColor
+		team.ParticipantCount = teamRequest.ParticipantCount
 
-		err := database.DB.QueryRow("INSERT INTO teams (name, description, city) VALUES ($1, $2, $3) RETURNING id", team.Name, team.Description, team.City).Scan(&team.ID)
+		err := database.DB.QueryRow("INSERT INTO teams (name, description, city, uniform_color, participant_count, responsible_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+			team.Name,
+			team.Description,
+			team.City,
+			team.UniformColor,
+			team.ParticipantCount,
+			AUTH.ID,
+		).Scan(&team.ID)
 		if err != nil {
 			log.Println(err)
 		}
 
-		json.NewEncoder(w).Encode(team)
+		errTeam, teamView := getOneTeam(team.ID)
+		if errTeam != nil {
+			http.Error(w, errTeam.Error(), http.StatusBadRequest)
+			return
+		}
+		json.NewEncoder(w).Encode(teamView)
 	}
 }
 
@@ -226,7 +291,7 @@ func CreateTeam() http.HandlerFunc {
 // @Router /api/teams/{id} [put]
 func UpdateTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, teamRequest := valiUpdatedAtTeamRequest(r)
+		validation, teamRequest := validateUpdatedAtTeamRequest(r)
 		if  validation != nil {
 			http.Error(w, validation.Error(), http.StatusBadRequest)
 			return
@@ -241,17 +306,21 @@ func UpdateTeam() http.HandlerFunc {
 		paramId, _ := strconv.Atoi(vars["id"])
 		team.ID = int64(paramId)
 
-		_, err := database.DB.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6",
+		_, errUpdate := database.DB.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6 and responsible_id = $7",
 			team.Name,
 			team.Description,
 			team.City,
 			team.Logo,
 			team.Media,
-			paramId)
-		if err != nil {
-			log.Println(err)
+			paramId,
+			AUTH.ID)
+		if errUpdate != nil {
+			log.Println(errUpdate)
+			http.Error(w, errUpdate.Error(), http.StatusBadRequest)
+
 		}
-		errorResponse, teamView := getOneTeam(paramId)
+
+		errorResponse, teamView := getOneTeam(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -272,31 +341,13 @@ func DeleteTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
-
-		var team models.Team
-		err := database.DB.QueryRow("SELECT * FROM teams WHERE id = $1", paramId).Scan(
-			&team.ID,
-			&team.Name,
-			&team.Description,
-			&team.City,
-			&team.UniformColor,
-			&team.ParticipantCount,
-			&team.Responsible,
-			&team.DisabilityCategory,
-			&team.Logo,
-			&team.Media,
-			&team.Status,
-			&team.CreatedAt,
-			&team.UpdatedAt,
-			&team.DeletedAt,
-			)
-		if err != nil {
+		errorResponse, teamView := getOneTeam(int64(paramId))
+		if errorResponse != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		} else {
-			_, err := database.DB.Exec("DELETE FROM teams WHERE id = $1", paramId)
+			_, err := database.DB.Exec("DELETE FROM teams WHERE id = $1 and responsible_id = $2", teamView.ID, AUTH.ID)
 			if err != nil {
-				//todo : fix error handling
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}

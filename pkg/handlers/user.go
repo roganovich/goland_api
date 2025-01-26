@@ -158,20 +158,7 @@ func GetUser() http.HandlerFunc {
 // @Router /api/auth [get]
 func InfoUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		tokenString := authHeader[len("Bearer "):]
-		token, errToken := ParseToken(tokenString)
-		if errToken != nil {
-			http.Error(w, "Неверный токен", http.StatusBadRequest)
-			return
-		}
-
-		errorResponse, userView := getUserFromToken(token)
-		if  errorResponse != nil {
-			http.Error(w, "Неверный токен", http.StatusBadRequest)
-			return
-		}
-		json.NewEncoder(w).Encode(userView)
+		json.NewEncoder(w).Encode(AUTH)
 		return
 	}
 }
@@ -208,19 +195,7 @@ func Login() http.HandlerFunc {
 
 func Refresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		tokenString := authHeader[len("Bearer "):]
-		token, errToken := ParseToken(tokenString)
-		if errToken != nil {
-			http.Error(w, "Неверный токен", http.StatusBadRequest)
-		}
-		errorResponse, user := getUserFromToken(token)
-		if  errorResponse != nil {
-			http.Error(w, "Такого пользователя не существует", http.StatusBadRequest)
-			return
-		}
-
-		tokenString, errorToken := getNewToken(user.Name, user.Email)
+		tokenString, errorToken := getNewToken(AUTH.Name, AUTH.Email)
 		if errorToken != nil {
 			http.Error(w, errorToken.Error(), http.StatusBadRequest)
 		}
@@ -310,7 +285,7 @@ func CreateUser() http.HandlerFunc {
 // @Router /api/users [put]
 func UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errValidate, userRequest, userView := validateUpdatedAtUserRequest(r)
+		errValidate, userRequest := validateUpdatedAtUserRequest(r)
 		if errValidate != nil {
 			// Преобразуем ошибки валидации в JSON
 			var validationErrors []models.ValidationErrorResponse
@@ -341,16 +316,16 @@ func UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		if (userView != nil && userRequest != nil){
-			userView.Name = userRequest.Name
-			userView.Email = userRequest.Email
-			userView.Phone = userRequest.Phone
+		if (userRequest != nil){
+			AUTH.Name = userRequest.Name
+			AUTH.Email = userRequest.Email
+			AUTH.Phone = userRequest.Phone
 			userPassword := getHashPassword(userRequest.Password)
 
 			_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3, password = $4 WHERE id = $5",
-				userView.Name,
-				userView.Email,
-				userView.Phone,
+				AUTH.Name,
+				AUTH.Email,
+				AUTH.Phone,
 				userPassword,
 				userRequest.ID)
 
@@ -358,7 +333,7 @@ func UpdateUser() http.HandlerFunc {
 				log.Println(err)
 			}
 
-			json.NewEncoder(w).Encode(userView)
+			json.NewEncoder(w).Encode(AUTH)
 			return
 		}
 
@@ -497,30 +472,15 @@ func isUniquePhoneFactory(userRequest models.UpdateUserRequest) validator.Func {
 	}
 }
 
-func validateUpdatedAtUserRequest(r *http.Request) (error, *models.UpdateUserRequest, *models.UserView) {
-	authHeader := r.Header.Get("Authorization")
-	tokenString := authHeader[len("Bearer "):]
-	token, errToken := ParseToken(tokenString)
-
-	if errToken != nil {
-		fmt.Println("Неверный токен")
-		return errToken, nil, nil
-	}
-
-	errorResponse, userView := getUserFromToken(token)
-	if  errorResponse != nil {
-		fmt.Println("Не смог получить User из токена")
-		return errToken, nil, nil
-	}
-
+func validateUpdatedAtUserRequest(r *http.Request) (error, *models.UpdateUserRequest) {
 	var userRequest models.UpdateUserRequest
 	// Парсим JSON из тела запроса
 	if errJson := json.NewDecoder(r.Body).Decode(&userRequest); errJson != nil {
 		fmt.Println("Неверный формат запроса JSON")
-		return errJson, nil, nil
+		return errJson, nil
 	}
 
-	userRequest.ID = userView.ID
+	userRequest.ID = AUTH.ID
 
 	validate := validator.New()
 	validate.RegisterValidation("email", isUniqueEmailFactory(userRequest))
@@ -528,10 +488,10 @@ func validateUpdatedAtUserRequest(r *http.Request) (error, *models.UpdateUserReq
 
 	errValidate := validate.Struct(userRequest)
 	if errValidate != nil {
-		return errValidate, nil, nil
+		return errValidate, nil
 	}
 
-	return nil, &userRequest, userView
+	return nil, &userRequest
 }
 
 func validateLoginUserRequest(r *http.Request) (error, models.LoginUserRequest) {

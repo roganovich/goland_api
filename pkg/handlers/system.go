@@ -1,12 +1,45 @@
 package handlers
 
 import (
+	"goland_api/pkg/models"
 	"net/http"
 	"fmt"
 	"os"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 )
+
+// AUTH - глобальная переменная с авторизацией
+var AUTH *models.UserView
+
+// Middleware для проверки авторизации
+func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		tokenString := authHeader[len("Bearer "):]
+		token, errToken := ParseToken(tokenString)
+		if errToken != nil {
+			http.Error(w, "Неверный токен", http.StatusBadRequest)
+			return
+		}
+
+		if !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		errorResponse, userView := getUserFromToken(token)
+		if  errorResponse != nil {
+			http.Error(w, "Неверный токен", http.StatusBadRequest)
+			return
+		}
+
+		AUTH = userView
+
+		// Если токен валиден, передаем запрос следующему обработчику
+		next.ServeHTTP(w, r)
+	})
+}
 
 func JsonContentTypeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

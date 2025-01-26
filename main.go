@@ -32,22 +32,22 @@ func main() {
 	router.HandleFunc("/api/users/{id}", handlers.GetUser()).Methods("GET")
 
 	// Кабинет
-	router.HandleFunc("/api/auth/info", handlers.InfoUser()).Methods("GET")
-	router.HandleFunc("/api/auth/create", handlers.CreateUser()).Methods("POST")
-	router.HandleFunc("/api/auth/update", handlers.UpdateUser()).Methods("PUT")
+	router.HandleFunc("/api/auth/info", handlers.AuthMiddleware(handlers.InfoUser())).Methods("GET")
+	router.HandleFunc("/api/auth/create", handlers.AuthMiddleware(handlers.CreateUser())).Methods("POST")
+	router.HandleFunc("/api/auth/update", handlers.AuthMiddleware(handlers.UpdateUser())).Methods("PUT")
 	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST")
-	router.HandleFunc("/api/auth/refresh", handlers.Refresh()).Methods("POST")
+	router.HandleFunc("/api/auth/refresh", handlers.AuthMiddleware(handlers.Refresh())).Methods("POST")
 	//router.HandleFunc("/api/auth", handlers.DeleteUser()).Methods("DELETE")
 
 	// Команды
 	router.HandleFunc("/api/teams", handlers.GetTeams()).Methods("GET")
 	router.HandleFunc("/api/teams/{id}", handlers.GetTeam()).Methods("GET")
-	router.HandleFunc("/api/teams", handlers.CreateTeam()).Methods("POST")
-	router.HandleFunc("/api/teams/{id}", handlers.UpdateTeam()).Methods("PUT")
-	router.HandleFunc("/api/teams/{id}", handlers.DeleteTeam()).Methods("DELETE")
+	router.HandleFunc("/api/teams", handlers.AuthMiddleware(handlers.CreateTeam())).Methods("POST")
+	router.HandleFunc("/api/teams/{id}", handlers.AuthMiddleware(handlers.UpdateTeam())).Methods("PUT")
+	router.HandleFunc("/api/teams/{id}", handlers.AuthMiddleware(handlers.DeleteTeam())).Methods("DELETE")
 
 	// Media
-	router.HandleFunc("/api/media/preloader", handlers.Preloader()).Methods("POST")
+	router.HandleFunc("/api/media/preloader", handlers.AuthMiddleware(handlers.Preloader())).Methods("POST")
 
 	//start server
 	log.Fatal(http.ListenAndServe(":8000", handlers.JsonContentTypeMiddleware(router)))
