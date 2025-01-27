@@ -61,7 +61,7 @@ func GetTeams() http.HandlerFunc {
 					teamView.Responsible = responsibleUser
 				}
 			}
-			if (!logo.Valid){
+			if (logo.Valid){
 				var logoFile models.Media
 				errorMedia, logoFile := getOneMedia(logo.String)
 				if  errorMedia != nil {
@@ -70,7 +70,7 @@ func GetTeams() http.HandlerFunc {
 					teamView.Logo = &logoFile
 				}
 			}
-			if (media == nil || len(media) == 0){
+			if (media != nil && len(media) > 0){
 				var mediaList []models.Media
 				var mediaFiles []string
 				err := json.Unmarshal(media, &mediaFiles)
@@ -98,58 +98,49 @@ func GetTeams() http.HandlerFunc {
 }
 
 func getOneTeam(paramId int64) (error, models.TeamView) {
-	var team models.Team
-	err := database.DB.QueryRow("SELECT * FROM teams WHERE id = $1", paramId).Scan(
-		&team.ID,
-		&team.Name,
-		&team.Description,
-		&team.City,
-		&team.UniformColor,
-		&team.ParticipantCount,
-		&team.Responsible,
-		&team.DisabilityCategory,
-		&team.Logo,
-		&team.Media,
-		&team.Status,
-		&team.CreatedAt,
-		&team.UpdatedAt,
-		&team.DeletedAt,
-		)
+	var teamView models.TeamView
+	var responsible int
+	var logo sql.NullString
+	var media json.RawMessage
 
-
-	errorResponsible, responsibleUser := getUserViewById(team.Responsible)
-	if  errorResponsible != nil {
-		log.Println(errorResponsible.Error())
+	err := database.DB.QueryRow("SELECT id, name, description, city, uniform_color, participant_count, responsible_id, logo, media, status, created_at   FROM teams WHERE id = $1", int64(paramId)).Scan(
+		&teamView.ID,
+		&teamView.Name,
+		&teamView.Description,
+		&teamView.City,
+		&teamView.UniformColor,
+		&teamView.ParticipantCount,
+		&responsible,
+		&logo,
+		&media,
+		&teamView.Status,
+		&teamView.CreatedAt,
+	)
+	if err != nil {
+		return err, teamView
 	}
 
-	var teamView models.TeamView
-	teamView.ID = team.ID
-	teamView.Name = team.Name
-	teamView.Description = team.Description
-	teamView.City = team.City
-	teamView.UniformColor = team.UniformColor
-	teamView.ParticipantCount = team.ParticipantCount
-	teamView.Responsible = responsibleUser
-	teamView.DisabilityCategory = team.DisabilityCategory
-	teamView.Status = team.Status
-	teamView.CreatedAt = team.CreatedAt
-
-	if (team.Logo != nil){
+	if (responsible != 0) {
+		errorResponsible, responsibleUser := getUserViewById(responsible)
+		if errorResponsible != nil {
+			log.Println(errorResponsible.Error())
+		}else{
+			teamView.Responsible = responsibleUser
+		}
+	}
+	if (logo.Valid){
 		var logoFile models.Media
-
-		errorMedia, logoFile := getOneMedia(*team.Logo)
+		errorMedia, logoFile := getOneMedia(logo.String)
 		if  errorMedia != nil {
 			log.Println(errorMedia.Error())
 		}else{
 			teamView.Logo = &logoFile
 		}
 	}
-
-	if (team.Media != nil){
+	if (media != nil && len(media) > 0){
 		var mediaList []models.Media
 		var mediaFiles []string
-
-		err := json.Unmarshal(*team.Media, &mediaFiles)
+		err := json.Unmarshal(media, &mediaFiles)
 		if err != nil {
 			log.Println("Ошибка при парсинге JSON:", err)
 		}
