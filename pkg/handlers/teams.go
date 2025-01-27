@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"database/sql"
 
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
@@ -25,67 +26,54 @@ import (
 // @Router /api/teams [get]
 func GetTeams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := database.DB.Query("SELECT * FROM teams")
+		rows, err := database.DB.Query("SELECT id, name, description, city, uniform_color, participant_count, responsible_id, logo, media, status, created_at  FROM teams")
 		if err != nil {
 			log.Println(err)
 		}
 		defer rows.Close()
-
 		teams := []models.TeamView{}
 		for rows.Next() {
-			var team models.Team
+			var teamView models.TeamView
+			var responsible int
+			var logo sql.NullString
+			var media json.RawMessage
+
 			if err := rows.Scan(
-				&team.ID,
-				&team.Name,
-				&team.Description,
-				&team.City,
-				&team.UniformColor,
-				&team.ParticipantCount,
-				&team.Responsible,
-				&team.DisabilityCategory,
-				&team.Logo,
-				&team.Media,
-				&team.Status,
-				&team.CreatedAt,
-				&team.UpdatedAt,
-				&team.DeletedAt,
+				&teamView.ID,
+				&teamView.Name,
+				&teamView.Description,
+				&teamView.City,
+				&teamView.UniformColor,
+				&teamView.ParticipantCount,
+				&responsible,
+				&logo,
+				&media,
+				&teamView.Status,
+				&teamView.CreatedAt,
 				); err != nil {
 				log.Println(err)
 			}
-
-			errorResponsible, responsibleUser := getUserViewById(team.Responsible)
-			if  errorResponsible != nil {
-				log.Println(errorResponsible.Error())
+			if (responsible != 0) {
+				errorResponsible, responsibleUser := getUserViewById(responsible)
+				if errorResponsible != nil {
+					log.Println(errorResponsible.Error())
+				}else{
+					teamView.Responsible = responsibleUser
+				}
 			}
-
-			var teamView models.TeamView
-			teamView.ID = team.ID
-			teamView.Name = team.Name
-			teamView.Description = team.Description
-			teamView.City = team.City
-			teamView.UniformColor = team.UniformColor
-			teamView.ParticipantCount = team.ParticipantCount
-			teamView.Responsible = responsibleUser
-			teamView.DisabilityCategory = team.DisabilityCategory
-			teamView.Status = team.Status
-			teamView.CreatedAt = team.CreatedAt
-
-			if (team.Logo != nil){
+			if (!logo.Valid){
 				var logoFile models.Media
-
-				errorMedia, logoFile := getOneMedia(*team.Logo)
+				errorMedia, logoFile := getOneMedia(logo.String)
 				if  errorMedia != nil {
 					log.Println(errorMedia.Error())
 				}else{
 					teamView.Logo = &logoFile
 				}
 			}
-
-			if (team.Media != nil){
+			if (media == nil || len(media) == 0){
 				var mediaList []models.Media
 				var mediaFiles []string
-
-				err := json.Unmarshal(*team.Media, &mediaFiles)
+				err := json.Unmarshal(media, &mediaFiles)
 				if err != nil {
 					log.Println("Ошибка при парсинге JSON:", err)
 				}
@@ -99,7 +87,6 @@ func GetTeams() http.HandlerFunc {
 				}
 				teamView.Media = &mediaList
 			}
-
 			teams = append(teams, teamView)
 		}
 		if err := rows.Err(); err != nil {
