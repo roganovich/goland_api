@@ -46,6 +46,13 @@ func main() {
 	router.HandleFunc("/api/teams/{id}", handlers.AuthMiddleware(handlers.UpdateTeam())).Methods("PUT")
 	router.HandleFunc("/api/teams/{id}", handlers.AuthMiddleware(handlers.DeleteTeam())).Methods("DELETE")
 
+	// Площадки
+	router.HandleFunc("/api/fields", handlers.GetFields()).Methods("GET")
+	router.HandleFunc("/api/fields/{id}", handlers.GetField()).Methods("GET")
+	router.HandleFunc("/api/fields", handlers.AuthMiddleware(handlers.CreateField())).Methods("POST")
+	router.HandleFunc("/api/fields/{id}", handlers.AuthMiddleware(handlers.UpdateField())).Methods("PUT")
+	router.HandleFunc("/api/fields/{id}", handlers.AuthMiddleware(handlers.DeleteField())).Methods("DELETE")
+
 	// Media
 	router.HandleFunc("/api/media/preloader", handlers.AuthMiddleware(handlers.Preloader())).Methods("POST")
 
