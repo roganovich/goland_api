@@ -61,4 +61,3 @@ type UpdateTeamRequest struct {
 	Logo            	*string    			`json:"logo"`                    			// Логотип
 	Media           	*json.RawMessage    `json:"media"`                   			// Медиа
 }
-
