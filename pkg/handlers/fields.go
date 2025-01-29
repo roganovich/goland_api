@@ -92,7 +92,7 @@ func getOneField(paramId int64) (error, models.FieldView) {
 	var logo sql.NullString
 	var media json.RawMessage
 
-	err := database.DB.QueryRow("SELECT id, name, description, city, address, logo, media, status, created_at   FROM fields WHERE id = $1", int64(paramId)).Scan(
+	err := database.DB.QueryRow("SELECT id, name, description, city, address, logo, media, status, created_at FROM fields WHERE id = $1", int64(paramId)).Scan(
 		&fieldView.ID,
 		&fieldView.Name,
 		&fieldView.Description,
@@ -264,19 +264,17 @@ func UpdateField() http.HandlerFunc {
 		paramId, _ := strconv.Atoi(vars["id"])
 		field.ID = int64(paramId)
 
-		_, errUpdate := database.DB.Exec("UPDATE fields SET name = $1, description = $2, city = $3, address = $4,logo = $5, media = $6 WHERE id = $6",
+		_, errUpdate := database.DB.Exec("UPDATE fields SET name = $1, description = $2, city = $3, address = $4, logo = $5, media = $6 WHERE id = $7",
 			field.Name,
 			field.Description,
 			field.City,
 			field.Address,
 			field.Logo,
 			field.Media,
-			paramId,
-			AUTH.ID)
+			paramId)
 		if errUpdate != nil {
 			log.Println(errUpdate)
 			http.Error(w, errUpdate.Error(), http.StatusBadRequest)
-
 		}
 
 		errorResponse, fieldView := getOneField(int64(paramId))
@@ -305,7 +303,7 @@ func DeleteField() http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		} else {
-			_, err := database.DB.Exec("DELETE FROM fields WHERE id = $1", fieldView.ID, AUTH.ID)
+			_, err := database.DB.Exec("DELETE FROM fields WHERE id = $1", fieldView.ID)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
