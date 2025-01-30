@@ -43,6 +43,7 @@ func getOneMedia(fileName string) (error, models.Media) {
 // @Failure 413 {object} models.ErrorResponse
 // @Failure 415 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
+// @Router /api/media/preloader [post]
 func Preloader() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Загрузка файла

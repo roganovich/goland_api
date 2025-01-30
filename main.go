@@ -56,6 +56,9 @@ func main() {
 	// Media
 	router.HandleFunc("/api/media/preloader", handlers.AuthMiddleware(handlers.Preloader())).Methods("POST")
 
+	// Адресса
+	router.HandleFunc("/api/address/suggest", handlers.AuthMiddleware(handlers.SuggestAddress())).Methods("POST")
+
 	//start server
 	log.Fatal(http.ListenAndServe(":8000", handlers.JsonContentTypeMiddleware(router)))
 }
