@@ -54,7 +54,7 @@ func GetTeams() http.HandlerFunc {
 				log.Println(err)
 			}
 			if (responsible != 0) {
-				errorResponsible, responsibleUser := getUserViewById(responsible)
+				errorResponsible, responsibleUser := getUserViewById(int64(responsible))
 				if errorResponsible != nil {
 					log.Println(errorResponsible.Error())
 				}else{
@@ -97,13 +97,13 @@ func GetTeams() http.HandlerFunc {
 	}
 }
 
-func getOneTeam(paramId int64) (error, models.TeamView) {
+func getOneTeamById(paramId int64) (error, models.TeamView) {
 	var teamView models.TeamView
 	var responsible int
 	var logo sql.NullString
 	var media json.RawMessage
 
-	err := database.DB.QueryRow("SELECT id, name, description, city, uniform_color, participant_count, responsible_id, logo, media, status, created_at   FROM teams WHERE id = $1", int64(paramId)).Scan(
+	err := database.DB.QueryRow("SELECT id, name, description, city, uniform_color, participant_count, responsible_id, logo, media, status, created_at FROM teams WHERE id = $1", int64(paramId)).Scan(
 		&teamView.ID,
 		&teamView.Name,
 		&teamView.Description,
@@ -121,7 +121,7 @@ func getOneTeam(paramId int64) (error, models.TeamView) {
 	}
 
 	if (responsible != 0) {
-		errorResponsible, responsibleUser := getUserViewById(responsible)
+		errorResponsible, responsibleUser := getUserViewById(int64(responsible))
 		if errorResponsible != nil {
 			log.Println(errorResponsible.Error())
 		}else{
@@ -172,7 +172,7 @@ func GetTeam() http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, teamView := getOneTeam(int64(paramId))
+		errorResponse, teamView := getOneTeamById(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -246,7 +246,7 @@ func CreateTeam() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		errTeam, teamView := getOneTeam(team.ID)
+		errTeam, teamView := getOneTeamById(int64(team.ID))
 		if errTeam != nil {
 			http.Error(w, errTeam.Error(), http.StatusBadRequest)
 			return
@@ -298,7 +298,7 @@ func UpdateTeam() http.HandlerFunc {
 
 		}
 
-		errorResponse, teamView := getOneTeam(int64(paramId))
+		errorResponse, teamView := getOneTeamById(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -319,7 +319,7 @@ func DeleteTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
-		errorResponse, teamView := getOneTeam(int64(paramId))
+		errorResponse, teamView := getOneTeamById(int64(paramId))
 		if errorResponse != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

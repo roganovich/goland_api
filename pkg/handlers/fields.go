@@ -87,7 +87,7 @@ func GetFields() http.HandlerFunc {
 	}
 }
 
-func getOneField(paramId int64) (error, models.FieldView) {
+func getOneFieldById(paramId int64) (error, models.FieldView) {
 	var fieldView models.FieldView
 	var logo sql.NullString
 	var media json.RawMessage
@@ -151,7 +151,7 @@ func GetField() http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, fieldView := getOneField(int64(paramId))
+		errorResponse, fieldView := getOneFieldById(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -225,7 +225,7 @@ func CreateField() http.HandlerFunc {
 			log.Println(err)
 		}
 
-		errField, fieldView := getOneField(field.ID)
+		errField, fieldView := getOneFieldById(int64(field.ID))
 		if errField != nil {
 			http.Error(w, errField.Error(), http.StatusBadRequest)
 			return
@@ -277,7 +277,7 @@ func UpdateField() http.HandlerFunc {
 			http.Error(w, errUpdate.Error(), http.StatusBadRequest)
 		}
 
-		errorResponse, fieldView := getOneField(int64(paramId))
+		errorResponse, fieldView := getOneFieldById(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -298,7 +298,7 @@ func DeleteField() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
-		errorResponse, fieldView := getOneField(int64(paramId))
+		errorResponse, fieldView := getOneFieldById(int64(paramId))
 		if errorResponse != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

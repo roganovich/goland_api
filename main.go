@@ -53,6 +53,12 @@ func main() {
 	router.HandleFunc("/api/fields/{id}", handlers.AuthMiddleware(handlers.UpdateField())).Methods("PUT")
 	router.HandleFunc("/api/fields/{id}", handlers.AuthMiddleware(handlers.DeleteField())).Methods("DELETE")
 
+	// Аренда
+	router.HandleFunc("/api/rentals", handlers.GetRentals()).Methods("GET")
+	router.HandleFunc("/api/rentals/{id}", handlers.GetRental()).Methods("GET")
+	router.HandleFunc("/api/rentals", handlers.AuthMiddleware(handlers.CreateRental())).Methods("POST")
+	router.HandleFunc("/api/rentals/{id}", handlers.AuthMiddleware(handlers.DeleteField())).Methods("DELETE")
+
 	// Media
 	router.HandleFunc("/api/media/preloader", handlers.AuthMiddleware(handlers.Preloader())).Methods("POST")
 

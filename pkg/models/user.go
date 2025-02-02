@@ -7,7 +7,7 @@ import(
 )
 
 type User struct {
-	ID    		int    				`json:"id"`
+	ID    		int64    				`json:"id"`
 	Name  		string 				`json:"name"`						// ФИО
 	Email 		string 				`json:"email"`						// Email
 	Phone 		*string 			`json:"phone"`						// Телефон
@@ -22,7 +22,7 @@ type User struct {
 }
 
 type UserView struct {
-	ID    		int    				`json:"id"`
+	ID    		int64    				`json:"id"`
 	Name  		string 				`json:"name"`						// ФИО
 	Email 		string 				`json:"email"`						// Email
 	Phone 		*string 			`json:"phone"`						// Телефон
@@ -34,7 +34,7 @@ type UserView struct {
 }
 
 type CreateUserRequest struct {
-	ID    		int
+	ID    		int64
 	Name 		string 				`json:"name" validate:"required,min=3,max=128"`
 	Email 		string 				`json:"email" validate:"required,email"`
 	Phone    	*string 			`json:"phone" validate:"omitempty,min=6,max=20,phone"`
@@ -42,7 +42,7 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	ID    		int    				`json:"id"`
+	ID    		int64    				`json:"id"`
 	Name 		string 				`json:"name" validate:"required,min=3,max=128"`
 	Email 		string 				`json:"email" validate:"required,email"`
 	Phone    	*string 			`json:"phone" validate:"omitempty,min=6,max=20,phone"`

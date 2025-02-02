@@ -76,7 +76,7 @@ func getUserFromToken(token *jwt.Token) (error, *models.UserView) {
 	return fmt.Errorf("Не смог прочитать токен"), nil
 }
 
-func getUserViewById(paramId int) (error, models.UserView) {
+func getUserViewById(paramId int64) (error, models.UserView) {
 	var userView models.UserView
 	err := database.DB.QueryRow("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users WHERE id = $1", int64(paramId)).Scan(
 		&userView.ID,
@@ -137,7 +137,7 @@ func GetUser() http.HandlerFunc {
 		vars := mux.Vars(r)
 		paramId, _ := strconv.Atoi(vars["id"])
 
-		errorResponse, userView := getUserViewById(paramId)
+		errorResponse, userView := getUserViewById(int64(paramId))
 		if  errorResponse != nil {
 			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
 			return
@@ -416,7 +416,7 @@ func validateCreateUserRequest(r *http.Request) (error, models.CreateUserRequest
 	}
 	vars := mux.Vars(r)
 	paramId, _ := strconv.Atoi(vars["id"])
-	userRequest.ID = paramId
+	userRequest.ID = int64(paramId)
 
 	validate := validator.New()
 	validate.RegisterValidation("email", isUniqueEmail)

@@ -13,7 +13,7 @@ type Team struct {
 	City            	string 	   	   		`json:"city"`           			// Город
 	UniformColor    	*string 	   		`json:"uniform_color"`           	// Цвет формы
 	ParticipantCount 	*int  		   		`json:"participant_count"`    		// Кол-во участников
-	Responsible     	int          		`json:"responsible"`          		// Ответственный
+	Responsible     	int64          		`json:"responsible"`          		// Ответственный
 	DisabilityCategory 	*string				`json:"disability_category"`  		// Категория инвалидности
 	Logo            	*string    			`json:"logo"`                 		// Логотип
 	Media           	*json.RawMessage    `json:"media"`                		// Медиа

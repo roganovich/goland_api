@@ -30,7 +30,7 @@ docker exec -it goland_api bash
 
 # Миграции
 ## Создать файл миграции
-migrate create -ext sql -dir db/migration -seq create_field
+migrate create -ext sql -dir db/migration -seq create_rental
 
 ## Выполнить
 migrate -path db/migration -database "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable" -verbose up
