@@ -211,7 +211,7 @@ func Refresh() http.HandlerFunc {
 // @Param createUser body models.CreateUserRequest true "Данные для создания пользователя"
 // @Consumes application/json
 // @Produces application/json
-// @Success 201 {object} models.UserRegistrationResponse
+// @Success 201 {object} string
 // @Failure 422 Unprocessable Entity
 // @Router /api/auth [post]
 func CreateUser() http.HandlerFunc {

@@ -17,7 +17,7 @@ import (
 // Документация для метода GetRentals
 // @Summary Возвращает список всех команд
 // @Description Получение списка всех команд
-// @Tags Команды
+// @Tags Аренда
 // @Accept application/json
 // @Produces application/json
 // @Success 200 {object} []models.RentalView
@@ -187,7 +187,7 @@ func getOneRentalById(paramId int64) (error, models.RentalView) {
 // Документация для метода GetRental
 // @Summary Возвращает информацию о команде по ID
 // @Description Получение информации о команде по идентификатору
-// @Tags Команды
+// @Tags Аренда
 // @Param id path int true "ID команды"
 // @Success 200 {object} models.RentalView
 // @Failure 400 Bad Request
@@ -224,7 +224,7 @@ func validateCreateRentalRequest(r *http.Request) (error, models.CreateRentalReq
 // Документация для метода CreateRental
 // @Summary Создание новой команды
 // @Description Создание новой команды
-// @Tags Команды
+// @Tags Аренда
 // @Param createRental body models.CreateRentalRequest true "Данные для создания новой команды"
 // @Consumes application/json
 // @Produces application/json
@@ -293,7 +293,7 @@ func CreateRental() http.HandlerFunc {
 // Документация для метода Deleterental
 // @Summary Удаляет команду по ID
 // @Description Удаление команды по идентификатору
-// @Tags Команды
+// @Tags Аренда
 // @Param id path int true "ID команды"
 // @Success 204 No Content
 // @Failure 404 Not Found

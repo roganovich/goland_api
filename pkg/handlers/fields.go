@@ -17,7 +17,7 @@ import (
 // Документация для метода GetFields
 // @Summary Возвращает список всех команд
 // @Description Получение списка всех команд
-// @Tags Команды
+// @Tags Площадки
 // @Accept application/json
 // @Produces application/json
 // @Success 200 {object} []models.FieldView
@@ -140,7 +140,7 @@ func getOneFieldById(paramId int64) (error, models.FieldView) {
 // Документация для метода GetField
 // @Summary Возвращает информацию о команде по ID
 // @Description Получение информации о команде по идентификатору
-// @Tags Команды
+// @Tags Площадки
 // @Param id path int true "ID команды"
 // @Success 200 {object} models.FieldView
 // @Failure 400 Bad Request
@@ -191,7 +191,7 @@ func validateUpdatedAtFieldRequest(r *http.Request) (error, models.UpdateFieldRe
 // Документация для метода CreateField
 // @Summary Создание новой команды
 // @Description Создание новой команды
-// @Tags Команды
+// @Tags Площадки
 // @Param createField body models.CreateFieldRequest true "Данные для создания новой команды"
 // @Consumes application/json
 // @Produces application/json
@@ -237,7 +237,7 @@ func CreateField() http.HandlerFunc {
 // Документация для метода UpdateField
 // @Summary Обновление существующей команды
 // @Description Обновление существующей команды
-// @Tags Команды
+// @Tags Площадки
 // @Param updateField body models.UpdateFieldRequest true "Данные для обновления команды"
 // @Consumes application/json
 // @Produces application/json
@@ -289,7 +289,7 @@ func UpdateField() http.HandlerFunc {
 // Документация для метода DeleteField
 // @Summary Удаляет команду по ID
 // @Description Удаление команды по идентификатору
-// @Tags Команды
+// @Tags Площадки
 // @Param id path int true "ID команды"
 // @Success 204 No Content
 // @Failure 404 Not Found

@@ -34,7 +34,7 @@ type FieldView struct {
 	Description *string         	`json:"description"`
 	City        string       		`json:"city"`
 	Address     string       		`json:"address"`
-	Location    *json.RawMessage    `json:"location"`
+	Location    *json.RawMessage    `json:"location" swaggertype:"string"`
 	Square      *int 				`json:"square"`
 	Info        *string 			`json:"info"`
 	Places      int           		`json:"places"`
@@ -54,7 +54,7 @@ type CreateFieldRequest struct {
 	Description *string			   	`json:"description"`
 	City        string       		`json:"city" validate:"required"`
 	Address     string       		`json:"address" validate:"required"`
-	Location    *json.RawMessage    `json:"location"`
+	Location    *json.RawMessage    `json:"location" swaggertype:"string"`
 	Square      *int 				`json:"square"`
 	Info        *string		 		`json:"info"`
 	Places      int           		`json:"places"`
@@ -64,7 +64,7 @@ type CreateFieldRequest struct {
 	Parking     bool          		`json:"parking"`
 	ForDisabled bool          		`json:"for_disabled"`
 	Logo        *string		 		`json:"logo"`
-	Media       *json.RawMessage    `json:"media"`
+	Media       *json.RawMessage    `json:"media" swaggertype:"string"`
 }
 
 type UpdateFieldRequest struct {
@@ -72,7 +72,7 @@ type UpdateFieldRequest struct {
 	Description *string			   	`json:"description"`
 	City        string       		`json:"city" validate:"required"`
 	Address     string       		`json:"address" validate:"required"`
-	Location    *json.RawMessage    `json:"location"`
+	Location    *json.RawMessage    `json:"location" swaggertype:"string"`
 	Square      *int 				`json:"square"`
 	Info        *string		 		`json:"info"`
 	Places      int           		`json:"places"`
@@ -82,5 +82,5 @@ type UpdateFieldRequest struct {
 	Parking     bool          		`json:"parking"`
 	ForDisabled bool          		`json:"for_disabled"`
 	Logo        *string		 		`json:"logo"`
-	Media       *json.RawMessage    `json:"media"`
+	Media       *json.RawMessage    `json:"media" swaggertype:"string"`
 }

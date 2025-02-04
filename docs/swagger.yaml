@@ -1,14 +1,120 @@
 basePath: /api
 definitions:
+  models.AddressResponse:
+    properties:
+      suggestions:
+        items:
+          $ref: '#/definitions/models.AddressSuggestion'
+        type: array
+    type: object
+  models.AddressSuggestion:
+    properties:
+      value:
+        type: string
+    type: object
+  models.CreateFieldRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      description:
+        type: string
+      display:
+        type: boolean
+      dressing:
+        type: boolean
+      for_disabled:
+        type: boolean
+      info:
+        type: string
+      location:
+        type: string
+      logo:
+        type: string
+      media:
+        type: string
+      name:
+        type: string
+      parking:
+        type: boolean
+      places:
+        type: integer
+      square:
+        type: integer
+      toilet:
+        type: boolean
+    required:
+    - address
+    - city
+    - name
+    type: object
+  models.CreateRentalRequest:
+    properties:
+      comment:
+        description: Статус аренды
+        type: string
+      end_date:
+        description: Дата завершения аренды
+        type: string
+      field_id:
+        description: Идентификатор площадки
+        type: integer
+      id:
+        description: Идентификатор
+        type: integer
+      start_date:
+        description: Дата начала аренды
+        type: string
+      team_id:
+        description: Идентификатор команды
+        type: integer
+    required:
+    - end_date
+    - field_id
+    - start_date
+    - team_id
+    type: object
   models.CreateTeamRequest:
+    properties:
+      city:
+        description: Город
+        type: string
+      description:
+        description: Описание
+        type: string
+      logo:
+        description: Логотип
+        type: string
+      media:
+        description: Медиа
+        type: string
+      name:
+        description: Название*
+        type: string
+      participant_count:
+        description: Кол-во участников
+        type: integer
+      uniform_color:
+        description: Цвет формы
+        type: string
+    required:
+    - city
+    - name
     type: object
   models.CreateUserRequest:
     properties:
       email:
         type: string
+      id:
+        type: integer
       name:
         maxLength: 128
         minLength: 3
+        type: string
+      password:
+        maxLength: 128
+        minLength: 4
         type: string
       phone:
         maxLength: 20
@@ -17,13 +123,62 @@ definitions:
     required:
     - email
     - name
+    - password
     type: object
   models.ErrorResponse:
     properties:
+      errors:
+        items:
+          $ref: '#/definitions/models.ValidationErrorResponse'
+        type: array
       message:
         type: string
       statusCode:
         type: integer
+    type: object
+  models.FieldView:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      display:
+        type: boolean
+      dressing:
+        type: boolean
+      for_disabled:
+        type: boolean
+      id:
+        type: integer
+      info:
+        type: string
+      location:
+        type: string
+      logo:
+        allOf:
+        - $ref: '#/definitions/models.Media'
+        description: Логотип
+      media:
+        description: Медиа
+        items:
+          $ref: '#/definitions/models.Media'
+        type: array
+      name:
+        type: string
+      parking:
+        type: boolean
+      places:
+        type: integer
+      square:
+        type: integer
+      status:
+        type: integer
+      toilet:
+        type: boolean
     type: object
   models.Media:
     properties:
@@ -40,6 +195,42 @@ definitions:
       size:
         type: integer
     type: object
+  models.RentalView:
+    properties:
+      comment:
+        description: Комментарий
+        type: string
+      created_at:
+        description: Дата создания
+        type: string
+      duration:
+        description: Длительность аренды (например, в часах)
+        type: integer
+      end_date:
+        description: Дата завершения аренды
+        type: string
+      field:
+        allOf:
+        - $ref: '#/definitions/models.FieldView'
+        description: Пощадка
+      id:
+        description: Идентификатор
+        type: integer
+      start_date:
+        description: Дата начала аренды
+        type: string
+      status:
+        description: Статус аренды
+        type: integer
+      team:
+        allOf:
+        - $ref: '#/definitions/models.TeamView'
+        description: Команда
+      user:
+        allOf:
+        - $ref: '#/definitions/models.UserView'
+        description: Пользователь
+    type: object
   models.TeamView:
     properties:
       city:
@@ -47,9 +238,6 @@ definitions:
         type: string
       created_at:
         description: Дата создания
-        type: string
-      deleted_at:
-        description: Дата удаления
         type: string
       description:
         description: Описание
@@ -75,27 +263,96 @@ definitions:
         description: Кол-во участников
         type: integer
       responsible:
+        allOf:
+        - $ref: '#/definitions/models.UserView'
         description: Ответственный
-        type: integer
       status:
         description: Статус
         type: integer
       uniform_color:
         description: Цвет формы
         type: string
-      updated_at:
-        description: Дата последнего обновления
+    type: object
+  models.UpdateFieldRequest:
+    properties:
+      address:
         type: string
+      city:
+        type: string
+      description:
+        type: string
+      display:
+        type: boolean
+      dressing:
+        type: boolean
+      for_disabled:
+        type: boolean
+      info:
+        type: string
+      location:
+        type: string
+      logo:
+        type: string
+      media:
+        type: string
+      name:
+        type: string
+      parking:
+        type: boolean
+      places:
+        type: integer
+      square:
+        type: integer
+      toilet:
+        type: boolean
+    required:
+    - address
+    - city
+    - name
     type: object
   models.UpdateTeamRequest:
+    properties:
+      city:
+        description: Город
+        type: string
+      description:
+        description: Описание
+        type: string
+      disability_category:
+        description: Категория инвалидности
+        type: string
+      logo:
+        description: Логотип
+        type: string
+      media:
+        description: Медиа
+        type: string
+      name:
+        description: Название*
+        type: string
+      participant_count:
+        description: Кол-во участников
+        type: integer
+      uniform_color:
+        description: Цвет формы
+        type: string
+    required:
+    - city
+    - name
     type: object
   models.UpdateUserRequest:
     properties:
       email:
         type: string
+      id:
+        type: integer
       name:
         maxLength: 128
         minLength: 3
+        type: string
+      password:
+        maxLength: 128
+        minLength: 4
         type: string
       phone:
         maxLength: 20
@@ -104,9 +361,13 @@ definitions:
     required:
     - email
     - name
+    - password
     type: object
   models.User:
     properties:
+      city:
+        description: Город
+        type: string
       created_at:
         description: Дата создания
         type: string
@@ -114,17 +375,66 @@ definitions:
         description: Дата удаления
         type: string
       email:
+        description: Email
         type: string
       id:
         type: integer
+      logo:
+        description: Логотип
+        type: string
+      media:
+        description: Медиа
+        type: string
       name:
+        description: ФИО
+        type: string
+      password:
+        description: Пароль
         type: string
       phone:
+        description: Телефон
         type: string
       status:
+        description: Статус
         type: integer
       updated_at:
         description: Дата последнего обновления
+        type: string
+    type: object
+  models.UserView:
+    properties:
+      city:
+        description: Город
+        type: string
+      created_at:
+        description: Дата создания
+        type: string
+      email:
+        description: Email
+        type: string
+      id:
+        type: integer
+      logo:
+        description: Логотип
+        type: string
+      media:
+        description: Медиа
+        type: string
+      name:
+        description: ФИО
+        type: string
+      phone:
+        description: Телефон
+        type: string
+      status:
+        description: Статус
+        type: integer
+    type: object
+  models.ValidationErrorResponse:
+    properties:
+      field:
+        type: string
+      message:
         type: string
     type: object
 host: localhost:8080
@@ -134,6 +444,320 @@ info:
   title: My Golang API
   version: "1.0"
 paths:
+  /api/address/suggests:
+    get:
+      description: Получить подсказку по части адреса
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Получить подсказку по части адреса
+      tags:
+      - Адреса
+  /api/auth:
+    get:
+      description: Получение информации о пользователе по идентификатору
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Возвращает информацию о пользователе по ID
+      tags:
+      - Пользователи
+    post:
+      description: Создание нового пользователя
+      parameters:
+      - description: Данные для создания пользователя
+        in: body
+        name: createUser
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Создание нового пользователя
+      tags:
+      - Пользователи
+  /api/fields:
+    get:
+      consumes:
+      - application/json
+      description: Получение списка всех команд
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.FieldView'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "500":
+          description: Internal Server Error
+          schema:
+            type: Internal
+      summary: Возвращает список всех команд
+      tags:
+      - Площадки
+    post:
+      description: Создание новой команды
+      parameters:
+      - description: Данные для создания новой команды
+        in: body
+        name: createField
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateFieldRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.FieldView'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Создание новой команды
+      tags:
+      - Площадки
+  /api/fields/{id}:
+    delete:
+      description: Удаление команды по идентификатору
+      parameters:
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Удаляет команду по ID
+      tags:
+      - Площадки
+    get:
+      description: Получение информации о команде по идентификатору
+      parameters:
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FieldView'
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Возвращает информацию о команде по ID
+      tags:
+      - Площадки
+    put:
+      description: Обновление существующей команды
+      parameters:
+      - description: Данные для обновления команды
+        in: body
+        name: updateField
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateFieldRequest'
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Обновление существующей команды
+      tags:
+      - Площадки
+  /api/media/preloader:
+    post:
+      description: Загрузка медиафайла
+      parameters:
+      - description: Загруженный файл
+        in: formData
+        name: file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Media'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Загрузить медиафайл
+      tags:
+      - Медиафайлы
+  /api/rentals:
+    get:
+      consumes:
+      - application/json
+      description: Получение списка всех команд
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RentalView'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "500":
+          description: Internal Server Error
+          schema:
+            type: Internal
+      summary: Возвращает список всех команд
+      tags:
+      - Аренда
+    post:
+      description: Создание новой команды
+      parameters:
+      - description: Данные для создания новой команды
+        in: body
+        name: createRental
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateRentalRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.RentalView'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            type: Unprocessable
+      summary: Создание новой команды
+      tags:
+      - Аренда
+  /api/rentals/{id}:
+    delete:
+      description: Удаление команды по идентификатору
+      parameters:
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Удаляет команду по ID
+      tags:
+      - Аренда
+    get:
+      description: Получение информации о команде по идентификатору
+      parameters:
+      - description: ID команды
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RentalView'
+        "400":
+          description: Bad Request
+          schema:
+            type: Bad
+        "404":
+          description: Not Found
+          schema:
+            type: Not
+      summary: Возвращает информацию о команде по ID
+      tags:
+      - Аренда
   /api/teams:
     get:
       consumes:
@@ -278,25 +902,34 @@ paths:
       summary: Возвращает список всех пользователей
       tags:
       - Пользователи
-    post:
-      description: Создание нового пользователя
+    put:
+      description: Обновление существующего пользователя
       parameters:
-      - description: Данные для создания пользователя
+      - description: Данные для обновления пользователя
         in: body
-        name: createUser
+        name: updateUser
         required: true
         schema:
-          $ref: '#/definitions/models.CreateUserRequest'
+          $ref: '#/definitions/models.UpdateUserRequest'
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
       responses:
-        "201":
-          description: Created
+        "204":
+          description: No Content
           schema:
-            $ref: '#/definitions/models.User'
+            type: "No"
+        "404":
+          description: Not Found
+          schema:
+            type: Not
         "422":
           description: Unprocessable Entity
           schema:
             type: Unprocessable
-      summary: Создание нового пользователя
+      summary: Обновление существующего пользователя
       tags:
       - Пользователи
   /api/users/{id}:
@@ -342,36 +975,6 @@ paths:
           schema:
             type: Not
       summary: Возвращает информацию о пользователе по ID
-      tags:
-      - Пользователи
-    put:
-      description: Обновление существующего пользователя
-      parameters:
-      - description: Данные для обновления пользователя
-        in: body
-        name: updateUser
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateUserRequest'
-      - description: ID пользователя
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "204":
-          description: No Content
-          schema:
-            type: "No"
-        "404":
-          description: Not Found
-          schema:
-            type: Not
-        "422":
-          description: Unprocessable Entity
-          schema:
-            type: Unprocessable
-      summary: Обновление существующего пользователя
       tags:
       - Пользователи
 swagger: "2.0"

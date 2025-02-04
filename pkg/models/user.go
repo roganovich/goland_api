@@ -14,7 +14,7 @@ type User struct {
 	Password 	string 				`json:"password"`					// Пароль
 	City        *string 	   		`json:"city"`           			// Город
 	Logo       	*string    			`json:"logo"`                 		// Логотип
-	Media       json.RawMessage    	`json:"media"`                		// Медиа
+	Media       json.RawMessage    	`json:"media" swaggertype:"string"`                		// Медиа
 	Status 		int 				`json:"status"`						// Статус
 	CreatedAt   time.Time       	`json:"created_at"`              	// Дата создания
 	UpdatedAt   time.Time       	`json:"updated_at"`             	// Дата последнего обновления
@@ -28,7 +28,7 @@ type UserView struct {
 	Phone 		*string 			`json:"phone"`						// Телефон
 	City        *string 	   		`json:"city"`           			// Город
 	Logo       	*string    			`json:"logo"`                 		// Логотип
-	Media       json.RawMessage     `json:"media"`                		// Медиа
+	Media       *json.RawMessage     `json:"media" swaggertype:"string"`                		// Медиа
 	Status 		int 				`json:"status"`						// Статус
 	CreatedAt   time.Time       	`json:"created_at"`              	// Дата создания
 }

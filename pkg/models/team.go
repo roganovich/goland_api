@@ -47,7 +47,7 @@ type CreateTeamRequest struct {
 	UniformColor    	*string 	   		`json:"uniform_color"`           			// Цвет формы
 	ParticipantCount 	*int  		   		`json:"participant_count"`       			// Кол-во участников
 	Logo            	*string    			`json:"logo"`                  				// Логотип
-	Media           	*json.RawMessage    `json:"media"`                   			// Медиа
+	Media           	*json.RawMessage    `json:"media" swaggertype:"string"`                   			// Медиа
 }
 
 // UpdateTeamRequest - структура запроса на изменение команды
@@ -59,5 +59,5 @@ type UpdateTeamRequest struct {
 	ParticipantCount 	*int  		   		`json:"participant_count"`       			// Кол-во участников
 	DisabilityCategory  *string 	   		`json:"disability_category"`     			// Категория инвалидности
 	Logo            	*string    			`json:"logo"`                    			// Логотип
-	Media           	*json.RawMessage    `json:"media"`                   			// Медиа
+	Media           	*json.RawMessage    `json:"media" swaggertype:"string"`                   			// Медиа
 }

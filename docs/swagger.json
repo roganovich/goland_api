@@ -9,6 +9,482 @@
     "host": "localhost:8080",
     "basePath": "/api",
     "paths": {
+        "/api/address/suggests": {
+            "get": {
+                "description": "Получить подсказку по части адреса",
+                "tags": [
+                    "Адреса"
+                ],
+                "summary": "Получить подсказку по части адреса",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AddressResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth": {
+            "get": {
+                "description": "Получение информации о пользователе по идентификатору",
+                "tags": [
+                    "Пользователи"
+                ],
+                "summary": "Возвращает информацию о пользователе по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "Bad"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создание нового пользователя",
+                "tags": [
+                    "Пользователи"
+                ],
+                "summary": "Создание нового пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для создания пользователя",
+                        "name": "createUser",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "Unprocessable"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/fields": {
+            "get": {
+                "description": "Получение списка всех команд",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Площадки"
+                ],
+                "summary": "Возвращает список всех команд",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.FieldView"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "Bad"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "Internal"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создание новой команды",
+                "tags": [
+                    "Площадки"
+                ],
+                "summary": "Создание новой команды",
+                "parameters": [
+                    {
+                        "description": "Данные для создания новой команды",
+                        "name": "createField",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateFieldRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.FieldView"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "Unprocessable"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/fields/{id}": {
+            "get": {
+                "description": "Получение информации о команде по идентификатору",
+                "tags": [
+                    "Площадки"
+                ],
+                "summary": "Возвращает информацию о команде по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID команды",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.FieldView"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "Bad"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновление существующей команды",
+                "tags": [
+                    "Площадки"
+                ],
+                "summary": "Обновление существующей команды",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления команды",
+                        "name": "updateField",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateFieldRequest"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID команды",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "No"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "Unprocessable"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаление команды по идентификатору",
+                "tags": [
+                    "Площадки"
+                ],
+                "summary": "Удаляет команду по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID команды",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "No"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/media/preloader": {
+            "post": {
+                "description": "Загрузка медиафайла",
+                "tags": [
+                    "Медиафайлы"
+                ],
+                "summary": "Загрузить медиафайл",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Загруженный файл",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rentals": {
+            "get": {
+                "description": "Получение списка всех команд",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Аренда"
+                ],
+                "summary": "Возвращает список всех команд",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RentalView"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "Bad"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "Internal"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создание новой команды",
+                "tags": [
+                    "Аренда"
+                ],
+                "summary": "Создание новой команды",
+                "parameters": [
+                    {
+                        "description": "Данные для создания новой команды",
+                        "name": "createRental",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateRentalRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.RentalView"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "Unprocessable"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/rentals/{id}": {
+            "get": {
+                "description": "Получение информации о команде по идентификатору",
+                "tags": [
+                    "Аренда"
+                ],
+                "summary": "Возвращает информацию о команде по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID команды",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RentalView"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "Bad"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаление команды по идентификатору",
+                "tags": [
+                    "Аренда"
+                ],
+                "summary": "Удаляет команду по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID команды",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "No"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
+                        }
+                    }
+                }
+            }
+        },
         "/api/teams": {
             "get": {
                 "description": "Получение списка всех команд",
@@ -226,28 +702,41 @@
                     }
                 }
             },
-            "post": {
-                "description": "Создание нового пользователя",
+            "put": {
+                "description": "Обновление существующего пользователя",
                 "tags": [
                     "Пользователи"
                 ],
-                "summary": "Создание нового пользователя",
+                "summary": "Обновление существующего пользователя",
                 "parameters": [
                     {
-                        "description": "Данные для создания пользователя",
-                        "name": "createUser",
+                        "description": "Данные для обновления пользователя",
+                        "name": "updateUser",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateUserRequest"
+                            "$ref": "#/definitions/models.UpdateUserRequest"
                         }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "204": {
+                        "description": "No Content",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "type": "No"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "Not"
                         }
                     },
                     "422": {
@@ -296,51 +785,6 @@
                     }
                 }
             },
-            "put": {
-                "description": "Обновление существующего пользователя",
-                "tags": [
-                    "Пользователи"
-                ],
-                "summary": "Обновление существующего пользователя",
-                "parameters": [
-                    {
-                        "description": "Данные для обновления пользователя",
-                        "name": "updateUser",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UpdateUserRequest"
-                        }
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "No"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "Not"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "type": "Unprocessable"
-                        }
-                    }
-                }
-            },
             "delete": {
                 "description": "Удаление пользователя по идентификатору",
                 "tags": [
@@ -374,23 +818,175 @@
         }
     },
     "definitions": {
+        "models.AddressResponse": {
+            "type": "object",
+            "properties": {
+                "suggestions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AddressSuggestion"
+                    }
+                }
+            }
+        },
+        "models.AddressSuggestion": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateFieldRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display": {
+                    "type": "boolean"
+                },
+                "dressing": {
+                    "type": "boolean"
+                },
+                "for_disabled": {
+                    "type": "boolean"
+                },
+                "info": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "media": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parking": {
+                    "type": "boolean"
+                },
+                "places": {
+                    "type": "integer"
+                },
+                "square": {
+                    "type": "integer"
+                },
+                "toilet": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.CreateRentalRequest": {
+            "type": "object",
+            "required": [
+                "end_date",
+                "field_id",
+                "start_date",
+                "team_id"
+            ],
+            "properties": {
+                "comment": {
+                    "description": "Статус аренды",
+                    "type": "string"
+                },
+                "end_date": {
+                    "description": "Дата завершения аренды",
+                    "type": "string"
+                },
+                "field_id": {
+                    "description": "Идентификатор площадки",
+                    "type": "integer"
+                },
+                "id": {
+                    "description": "Идентификатор",
+                    "type": "integer"
+                },
+                "start_date": {
+                    "description": "Дата начала аренды",
+                    "type": "string"
+                },
+                "team_id": {
+                    "description": "Идентификатор команды",
+                    "type": "integer"
+                }
+            }
+        },
         "models.CreateTeamRequest": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "city",
+                "name"
+            ],
+            "properties": {
+                "city": {
+                    "description": "Город",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Описание",
+                    "type": "string"
+                },
+                "logo": {
+                    "description": "Логотип",
+                    "type": "string"
+                },
+                "media": {
+                    "description": "Медиа",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Название*",
+                    "type": "string"
+                },
+                "participant_count": {
+                    "description": "Кол-во участников",
+                    "type": "integer"
+                },
+                "uniform_color": {
+                    "description": "Цвет формы",
+                    "type": "string"
+                }
+            }
         },
         "models.CreateUserRequest": {
             "type": "object",
             "required": [
                 "email",
-                "name"
+                "name",
+                "password"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 128,
                     "minLength": 3
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 4
                 },
                 "phone": {
                     "type": "string",
@@ -402,11 +998,85 @@
         "models.ErrorResponse": {
             "type": "object",
             "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ValidationErrorResponse"
+                    }
+                },
                 "message": {
                     "type": "string"
                 },
                 "statusCode": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.FieldView": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display": {
+                    "type": "boolean"
+                },
+                "dressing": {
+                    "type": "boolean"
+                },
+                "for_disabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "info": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "logo": {
+                    "description": "Логотип",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Media"
+                        }
+                    ]
+                },
+                "media": {
+                    "description": "Медиа",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Media"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parking": {
+                    "type": "boolean"
+                },
+                "places": {
+                    "type": "integer"
+                },
+                "square": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "toilet": {
+                    "type": "boolean"
                 }
             }
         },
@@ -433,6 +1103,63 @@
                 }
             }
         },
+        "models.RentalView": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "description": "Комментарий",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Дата создания",
+                    "type": "string"
+                },
+                "duration": {
+                    "description": "Длительность аренды (например, в часах)",
+                    "type": "integer"
+                },
+                "end_date": {
+                    "description": "Дата завершения аренды",
+                    "type": "string"
+                },
+                "field": {
+                    "description": "Пощадка",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FieldView"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "Идентификатор",
+                    "type": "integer"
+                },
+                "start_date": {
+                    "description": "Дата начала аренды",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Статус аренды",
+                    "type": "integer"
+                },
+                "team": {
+                    "description": "Команда",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TeamView"
+                        }
+                    ]
+                },
+                "user": {
+                    "description": "Пользователь",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.UserView"
+                        }
+                    ]
+                }
+            }
+        },
         "models.TeamView": {
             "type": "object",
             "properties": {
@@ -442,10 +1169,6 @@
                 },
                 "created_at": {
                     "description": "Дата создания",
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "description": "Дата удаления",
                     "type": "string"
                 },
                 "description": {
@@ -484,7 +1207,11 @@
                 },
                 "responsible": {
                     "description": "Ответственный",
-                    "type": "integer"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.UserView"
+                        }
+                    ]
                 },
                 "status": {
                     "description": "Статус",
@@ -493,30 +1220,128 @@
                 "uniform_color": {
                     "description": "Цвет формы",
                     "type": "string"
-                },
-                "updated_at": {
-                    "description": "Дата последнего обновления",
+                }
+            }
+        },
+        "models.UpdateFieldRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "city",
+                "name"
+            ],
+            "properties": {
+                "address": {
                     "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display": {
+                    "type": "boolean"
+                },
+                "dressing": {
+                    "type": "boolean"
+                },
+                "for_disabled": {
+                    "type": "boolean"
+                },
+                "info": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "media": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parking": {
+                    "type": "boolean"
+                },
+                "places": {
+                    "type": "integer"
+                },
+                "square": {
+                    "type": "integer"
+                },
+                "toilet": {
+                    "type": "boolean"
                 }
             }
         },
         "models.UpdateTeamRequest": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "city",
+                "name"
+            ],
+            "properties": {
+                "city": {
+                    "description": "Город",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Описание",
+                    "type": "string"
+                },
+                "disability_category": {
+                    "description": "Категория инвалидности",
+                    "type": "string"
+                },
+                "logo": {
+                    "description": "Логотип",
+                    "type": "string"
+                },
+                "media": {
+                    "description": "Медиа",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Название*",
+                    "type": "string"
+                },
+                "participant_count": {
+                    "description": "Кол-во участников",
+                    "type": "integer"
+                },
+                "uniform_color": {
+                    "description": "Цвет формы",
+                    "type": "string"
+                }
+            }
         },
         "models.UpdateUserRequest": {
             "type": "object",
             "required": [
                 "email",
-                "name"
+                "name",
+                "password"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 128,
                     "minLength": 3
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 4
                 },
                 "phone": {
                     "type": "string",
@@ -528,6 +1353,10 @@
         "models.User": {
             "type": "object",
             "properties": {
+                "city": {
+                    "description": "Город",
+                    "type": "string"
+                },
                 "created_at": {
                     "description": "Дата создания",
                     "type": "string"
@@ -537,22 +1366,89 @@
                     "type": "string"
                 },
                 "email": {
+                    "description": "Email",
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
+                "logo": {
+                    "description": "Логотип",
+                    "type": "string"
+                },
+                "media": {
+                    "description": "Медиа",
+                    "type": "string"
+                },
                 "name": {
+                    "description": "ФИО",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "Пароль",
                     "type": "string"
                 },
                 "phone": {
+                    "description": "Телефон",
                     "type": "string"
                 },
                 "status": {
+                    "description": "Статус",
                     "type": "integer"
                 },
                 "updated_at": {
                     "description": "Дата последнего обновления",
+                    "type": "string"
+                }
+            }
+        },
+        "models.UserView": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "description": "Город",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Дата создания",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "Email",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "logo": {
+                    "description": "Логотип",
+                    "type": "string"
+                },
+                "media": {
+                    "description": "Медиа",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "ФИО",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "Телефон",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Статус",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ValidationErrorResponse": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "message": {
                     "type": "string"
                 }
             }
