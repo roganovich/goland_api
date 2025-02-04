@@ -3,8 +3,8 @@ package handlers
 import (
 	"goland_api/pkg/models"
 	"net/http"
-	"fmt"
-	"os"
+	"net/url"
+	"strconv"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 )
@@ -46,15 +46,6 @@ func JsonContentTypeMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
-}
-
-func varDump(myVar ...interface{}) {
-	fmt.Printf("%v\n", myVar)
-}
-
-func dd(myVar ...interface{}) {
-	varDump(myVar...)
-	os.Exit(1)
 }
 
 var (
@@ -99,4 +90,18 @@ func registerCustomErrorMessages() {
 		t, _ := ut.T("phone", fe.Field())
 		return t
 	})
+}
+
+func getIntParam(params url.Values, key string, defaultValue int) int {
+	value := params.Get(key) // Получаем значение параметра
+	if value == "" {
+		return defaultValue // Возвращаем значение по умолчанию, если параметр отсутствует
+	}
+
+	result, err := strconv.Atoi(value) // Преобразуем строку в int
+	if err != nil {
+		return defaultValue // Возвращаем значение по умолчанию в случае ошибки
+	}
+
+	return result
 }

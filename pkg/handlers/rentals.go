@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
+	"math"
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -26,12 +26,38 @@ import (
 // @Router /api/rentals [get]
 func GetRentals() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := database.DB.Query("SELECT id, field_id, team_id, user_id, comment, start_date, end_date, duration, status, created_at FROM rentals")
+		// Извлекаем параметры из GET-запроса
+		queryParams := r.URL.Query()
+		// Извлекаем значение параметра "page" (с значением по умолчанию)
+		page := getIntParam(queryParams, "page", 1)
+		// Извлекаем значение параметра "per_page" (с значением по умолчанию)
+		perPage := getIntParam(queryParams, "per_page", 10)
+		// Вычисляем OFFSET
+		offset := (page - 1) * perPage
+
+		var totalCount int
+		err := database.DB.QueryRow("SELECT COUNT(id) FROM rentals").Scan(&totalCount)
 		if err != nil {
-			log.Println(err)
+			log.Fatal(err)
+		}
+
+		var pages int
+		pages = int(math.Ceil(float64(totalCount) / float64(perPage)))
+
+		query := `
+		SELECT id, field_id, team_id, user_id, comment, start_date, end_date, duration, status, created_at 
+		FROM rentals
+		ORDER BY id
+		LIMIT $1 OFFSET $2
+	`
+		// Выполняем запрос
+		rows, errQuery := database.DB.Query(query, perPage, offset)
+		if errQuery != nil {
+			log.Println(errQuery)
 		}
 		defer rows.Close()
-		rentals := []models.RentalView{}
+		// Преобразуем []RentalView в []interface{}
+		var rentalsInterface []interface{}
 		for rows.Next() {
 			var rentalView models.RentalView
 			var fieldId int64
@@ -76,13 +102,36 @@ func GetRentals() http.HandlerFunc {
 					rentalView.User = userView
 				}
 			}
-
+			rentalsInterface = append(rentalsInterface, rentalView)
+			//rentals = append(rentals, rentalView)
 		}
 		if err := rows.Err(); err != nil {
 			log.Println(err)
 		}
 
-		json.NewEncoder(w).Encode(rentals)
+		var fiter models.RentalSearchFilter
+		validationFilterJsonError := json.NewDecoder(r.Body).Decode(&fiter)
+		if  validationFilterJsonError != nil {
+			log.Println(validationFilterJsonError.Error())
+		}
+		validate := validator.New()
+		validationFilterError := validate.Struct(fiter)
+		if validationFilterError != nil {
+			log.Println(validationFilterError.Error())
+		}
+
+		response := models.PaginationResponse{
+			Pagination: models.Pagination{
+				Page:       page,
+				PerPage:    perPage,
+				TotalPages: pages,
+				TotalItems: totalCount,
+			},
+			Filter: fiter,
+			Data: rentalsInterface,
+		}
+
+		json.NewEncoder(w).Encode(response)
 	}
 }
 

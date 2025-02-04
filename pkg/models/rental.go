@@ -42,31 +42,11 @@ type CreateRentalRequest struct {
 	EndDate      string 		`json:"end_date" validate:"required"`      // Дата завершения аренды
 }
 
-// Кастомный тип для времени
-type CustomTime struct {
-	time.Time
-}
-
-// Формат времени, который используется в JSON
-const layout = "2006-01-02 15:04:05"
-
-// Реализуем интерфейс json.Unmarshaler для CustomTime
-func (ct *CustomTime) UnmarshalJSON(b []byte) error {
-	// Убираем кавычки из JSON-строки
-	str := string(b)
-	str = str[1 : len(str)-1]
-
-	// Парсим время
-	t, err := time.Parse(layout, str)
-	if err != nil {
-		return err
-	}
-
-	ct.Time = t
-	return nil
-}
-
-// Реализуем интерфейс json.Marshaler для CustomTime
-func (ct CustomTime) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + ct.Time.Format(layout) + `"`), nil
+type RentalSearchFilter struct {
+	Search 		*string   	`json:"search"` 		// Поисковый запрос
+	FieldId   	*[]int64 	`json:"field_ids"`   	// Фильтр по площадкам
+	TeamId   	*[]int64 	`json:"team_ids"`   	// Фильтр по командам
+	StartDate   *string 	`json:"start_date"`     // Дата начала аренды
+	EndDate     *string 	`json:"end_date"`       // Дата завершения аренды
+	Status      *int    	`json:"status"`         // Статус аренды
 }
