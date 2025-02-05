@@ -22,13 +22,14 @@ type User struct {
 }
 
 type UserView struct {
-	ID    		int64    				`json:"id"`
+	ID    		int64    			`json:"id"`
 	Name  		string 				`json:"name"`						// ФИО
 	Email 		string 				`json:"email"`						// Email
+	Role 		Role 				`json:"role"`						// Роль
 	Phone 		*string 			`json:"phone"`						// Телефон
 	City        *string 	   		`json:"city"`           			// Город
 	Logo       	*string    			`json:"logo"`                 		// Логотип
-	Media       *json.RawMessage     `json:"media" swaggertype:"string"`                		// Медиа
+	Media       *json.RawMessage    `json:"media" swaggertype:"string"` // Медиа
 	Status 		int 				`json:"status"`						// Статус
 	CreatedAt   time.Time       	`json:"created_at"`              	// Дата создания
 }

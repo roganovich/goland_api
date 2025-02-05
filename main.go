@@ -28,12 +28,12 @@ func main() {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	// Участники
-	router.HandleFunc("/api/users", handlers.GetUsers()).Methods("GET")
-	router.HandleFunc("/api/users/{id}", handlers.GetUser()).Methods("GET")
+	router.HandleFunc("/api/users", handlers.AuthMiddleware(handlers.GetUsers())).Methods("GET")
+	router.HandleFunc("/api/users/{id}", handlers.AuthMiddleware(handlers.GetUser())).Methods("GET")
 
 	// Кабинет
 	router.HandleFunc("/api/auth/info", handlers.AuthMiddleware(handlers.InfoUser())).Methods("GET")
-	router.HandleFunc("/api/auth/create", handlers.AuthMiddleware(handlers.CreateUser())).Methods("POST")
+	router.HandleFunc("/api/auth/create", handlers.CreateUser()).Methods("POST")
 	router.HandleFunc("/api/auth/update", handlers.AuthMiddleware(handlers.UpdateUser())).Methods("PUT")
 	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST")
 	router.HandleFunc("/api/auth/refresh", handlers.AuthMiddleware(handlers.Refresh())).Methods("POST")

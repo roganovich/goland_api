@@ -78,7 +78,15 @@ func getUserFromToken(token *jwt.Token) (error, *models.UserView) {
 
 func getUserViewById(paramId int64) (error, models.UserView) {
 	var userView models.UserView
-	err := database.DB.QueryRow("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users WHERE id = $1", int64(paramId)).Scan(
+	var role models.Role
+
+	err := database.DB.QueryRow(
+		"SELECT " +
+			"u.id, u.name, u.email, u.phone, u.city, u.logo, u.media, u.status, u.created_at, " +
+			"r.id, r.name " +
+			"FROM users u " +
+			"join roles r on r.id = u.role_id " +
+			"WHERE email = $1", paramId).Scan(
 		&userView.ID,
 		&userView.Name,
 		&userView.Email,
@@ -88,14 +96,25 @@ func getUserViewById(paramId int64) (error, models.UserView) {
 		&userView.Media,
 		&userView.Status,
 		&userView.CreatedAt,
+		&role.ID,
+		&role.Name,
 	)
+	userView.Role = role
 
 	return err, userView
 }
 
 func getUserViewByEmail(paramEmail string) (error, models.UserView) {
 	var userView models.UserView
-	err := database.DB.QueryRow("SELECT id, name, email, phone, city, logo, media, status, created_at FROM users WHERE email = $1", paramEmail).Scan(
+	var role models.Role
+
+	err := database.DB.QueryRow(
+		"SELECT " +
+			"u.id, u.name, u.email, u.phone, u.city, u.logo, u.media, u.status, u.created_at, " +
+			"r.id, r.name " +
+			"FROM users u " +
+			"join roles r on r.id = u.role_id " +
+			"WHERE email = $1", paramEmail).Scan(
 		&userView.ID,
 		&userView.Name,
 		&userView.Email,
@@ -105,7 +124,10 @@ func getUserViewByEmail(paramEmail string) (error, models.UserView) {
 		&userView.Media,
 		&userView.Status,
 		&userView.CreatedAt,
+		&role.ID,
+		&role.Name,
 	)
+	userView.Role = role
 
 	return err, userView
 }
