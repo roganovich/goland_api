@@ -28,8 +28,8 @@ func main() {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	// Участники
-	router.HandleFunc("/api/users", handlers.AuthMiddleware(handlers.GetUsers())).Methods("GET")
-	router.HandleFunc("/api/users/{id}", handlers.AuthMiddleware(handlers.GetUser())).Methods("GET")
+	router.HandleFunc("/api/users", handlers.AuthAdminMiddleware(handlers.GetUsers())).Methods("GET")
+	router.HandleFunc("/api/users/{id}", handlers.AuthAdminMiddleware(handlers.GetUser())).Methods("GET")
 
 	// Кабинет
 	router.HandleFunc("/api/auth/info", handlers.AuthMiddleware(handlers.InfoUser())).Methods("GET")
@@ -42,16 +42,16 @@ func main() {
 	// Команды
 	router.HandleFunc("/api/teams", handlers.GetTeams()).Methods("GET")
 	router.HandleFunc("/api/teams/{id}", handlers.GetTeam()).Methods("GET")
-	router.HandleFunc("/api/teams", handlers.AuthMiddleware(handlers.CreateTeam())).Methods("POST")
-	router.HandleFunc("/api/teams/{id}", handlers.AuthMiddleware(handlers.UpdateTeam())).Methods("PUT")
-	router.HandleFunc("/api/teams/{id}", handlers.AuthMiddleware(handlers.DeleteTeam())).Methods("DELETE")
+	router.HandleFunc("/api/teams", handlers.AuthUserMiddleware(handlers.CreateTeam())).Methods("POST")
+	router.HandleFunc("/api/teams/{id}", handlers.AuthUserMiddleware(handlers.UpdateTeam())).Methods("PUT")
+	router.HandleFunc("/api/teams/{id}", handlers.AuthUserMiddleware(handlers.DeleteTeam())).Methods("DELETE")
 
 	// Площадки
 	router.HandleFunc("/api/fields", handlers.GetFields()).Methods("GET")
 	router.HandleFunc("/api/fields/{id}", handlers.GetField()).Methods("GET")
-	router.HandleFunc("/api/fields", handlers.AuthMiddleware(handlers.CreateField())).Methods("POST")
-	router.HandleFunc("/api/fields/{id}", handlers.AuthMiddleware(handlers.UpdateField())).Methods("PUT")
-	router.HandleFunc("/api/fields/{id}", handlers.AuthMiddleware(handlers.DeleteField())).Methods("DELETE")
+	router.HandleFunc("/api/fields", handlers.AuthAdminMiddleware(handlers.CreateField())).Methods("POST")
+	router.HandleFunc("/api/fields/{id}", handlers.AuthAdminMiddleware(handlers.UpdateField())).Methods("PUT")
+	router.HandleFunc("/api/fields/{id}", handlers.AuthAdminMiddleware(handlers.DeleteField())).Methods("DELETE")
 
 	// Аренда
 	router.HandleFunc("/api/rentals", handlers.GetRentals()).Methods("GET")

@@ -11,10 +11,18 @@ import (
 
 // AUTH - глобальная переменная с авторизацией
 var AUTH *models.UserView
+// Массив допустимых ролей
+var UserRoles = map[int]bool{
+	1: true,
+	2: true,
+}
+var AdminRoles = map[int]bool{
+	10: true,
+	11: true,
+}
 
 // Middleware для проверки авторизации
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func getAuth(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		tokenString := authHeader[len("Bearer "):]
 		token, errToken := ParseToken(tokenString)
@@ -33,9 +41,37 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Неверный токен", http.StatusBadRequest)
 			return
 		}
-
 		AUTH = userView
+		return
+}
 
+func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		getAuth(w, r)
+		// Если токен валиден, передаем запрос следующему обработчику
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AuthUserMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		getAuth(w, r)
+		if _, exists := UserRoles[AUTH.Role.ID]; !exists {
+			http.Error(w, "Роль пользователя недопустима", http.StatusBadRequest)
+			return
+		}
+		// Если токен валиден, передаем запрос следующему обработчику
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AuthAdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		getAuth(w, r)
+		if _, exists := AdminRoles[AUTH.Role.ID]; !exists {
+			http.Error(w, "Роль пользователя недопустима", http.StatusBadRequest)
+			return
+		}
 		// Если токен валиден, передаем запрос следующему обработчику
 		next.ServeHTTP(w, r)
 	})
