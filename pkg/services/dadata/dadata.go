@@ -4,19 +4,16 @@ import (
 	"goland_api/pkg/models"
 	"bytes"
 	"log"
+	"os"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 )
 
-const (
-	apiKey    = "7eef0df9113aaa894399970d7bb5f30a680b3b65"
-	secretKey = "63c17bc8ddfcb0c0428f58aa66c2e12cf4f599f3"
-	apiURL    = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
-)
-
 func Suggest(requestBody []byte) (models.AddressResponse, error) {
 	var addressResponse models.AddressResponse
+	apiKey := os.Getenv("DADATA_API_KEY")
+	apiURL := os.Getenv("DADATA_API_URL")
 
 	// Создаем HTTP-запрос
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(requestBody))

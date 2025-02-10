@@ -6,7 +6,11 @@ services:
     image: francescoxx/go-app:1.0.0
     build: .
     environment:
-      DATABASE_URL: "host=go_db user=postgres password=postgres dbname=postgres sslmode=disable"
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - DADATA_API_KEY=${DADATA_API_KEY}
+      - DADATA_API_URL=${DADATA_API_URL}
+      - DEBUG=${DEBUG}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U username"]
       interval: 10s

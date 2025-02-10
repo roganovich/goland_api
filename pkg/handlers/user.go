@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"fmt"
 	"time"
+	"os"
 	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -541,11 +542,9 @@ func getNewToken(name string, email string) (string, error) {
 			ExpiresAt: 	expiresAt,
 		},
 	}
-	/**
-	* TODO
-	* вынести в ENV
-	*/
-	var secretKey = []byte("my_jwt_secret")
+
+	jwt_secret := os.Getenv("JWT_SECRET")
+	var secretKey = []byte(jwt_secret)
 	token := jwt.New(jwt.SigningMethodHS256)
 	token.Claims = claims
 	tokenString, err := token.SignedString(secretKey)
@@ -558,7 +557,8 @@ func getNewToken(name string, email string) (string, error) {
 
 // ParseToken проверяет и парсит JWT-токен
 func ParseToken(tokenString string) (*jwt.Token, error) {
-	var secretKey = []byte("my_jwt_secret")
+	jwt_secret := os.Getenv("JWT_SECRET")
+	var secretKey = []byte(jwt_secret)
 
 	// Парсим токен
 	token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {

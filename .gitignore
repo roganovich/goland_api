@@ -4,3 +4,4 @@
 *.sum
 *.exe
 bin
+.env.local
