@@ -221,37 +221,55 @@ func validateUpdatedAtTeamRequest(r *http.Request) (error, models.UpdateTeamRequ
 // @Router /api/teams [post]
 func CreateTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, teamRequest := validateCreateTeamRequest(r)
-		if  validation != nil {
-			http.Error(w, validation.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		var team models.Team
-		team.Name = teamRequest.Name
-		team.Description = teamRequest.Description
-		team.City = teamRequest.City
-		team.UniformColor = teamRequest.UniformColor
-		team.ParticipantCount = teamRequest.ParticipantCount
+		if r.Method == http.MethodPost {
+			validation, teamRequest := validateCreateTeamRequest(r)
+			if  validation != nil {
+				http.Error(w, validation.Error(), http.StatusBadRequest)
+				return
+			}
 
-		err := database.DB.QueryRow("INSERT INTO teams (name, description, city, uniform_color, participant_count, responsible_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-			team.Name,
-			team.Description,
-			team.City,
-			team.UniformColor,
-			team.ParticipantCount,
-			AUTH.ID,
-		).Scan(&team.ID)
-		if err != nil {
-			log.Println(err)
-		}
+			var team models.Team
+			team.Name = teamRequest.Name
+			team.Description = teamRequest.Description
+			team.City = teamRequest.City
+			team.UniformColor = teamRequest.UniformColor
+			team.ParticipantCount = teamRequest.ParticipantCount
 
-		errTeam, teamView := getOneTeamById(int64(team.ID))
-		if errTeam != nil {
-			http.Error(w, errTeam.Error(), http.StatusBadRequest)
+			err := database.DB.QueryRow("INSERT INTO teams (name, description, city, uniform_color, participant_count, responsible_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+				team.Name,
+				team.Description,
+				team.City,
+				team.UniformColor,
+				team.ParticipantCount,
+				AUTH.ID,
+			).Scan(&team.ID)
+			if err != nil {
+				log.Println(err)
+			}
+
+			errTeam, teamView := getOneTeamById(int64(team.ID))
+			if errTeam != nil {
+				http.Error(w, errTeam.Error(), http.StatusBadRequest)
+				return
+			}
+			json.NewEncoder(w).Encode(teamView)
 			return
 		}
-		json.NewEncoder(w).Encode(teamView)
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -269,41 +287,60 @@ func CreateTeam() http.HandlerFunc {
 // @Router /api/teams/{id} [put]
 func UpdateTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, teamRequest := validateUpdatedAtTeamRequest(r)
-		if  validation != nil {
-			http.Error(w, validation.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "PUT, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
-		var team models.Team
-		team.Name = teamRequest.Name
-		team.Description = teamRequest.Description
-		team.City = teamRequest.City
-		team.Logo = teamRequest.Logo
-		team.Media = teamRequest.Media
-		vars := mux.Vars(r)
-		paramId, _ := strconv.Atoi(vars["id"])
-		team.ID = int64(paramId)
 
-		_, errUpdate := database.DB.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6 and responsible_id = $7",
-			team.Name,
-			team.Description,
-			team.City,
-			team.Logo,
-			team.Media,
-			paramId,
-			AUTH.ID)
-		if errUpdate != nil {
-			log.Println(errUpdate)
-			http.Error(w, errUpdate.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodPut {
 
-		}
+			validation, teamRequest := validateUpdatedAtTeamRequest(r)
+			if  validation != nil {
+				http.Error(w, validation.Error(), http.StatusBadRequest)
+				return
+			}
+			var team models.Team
+			team.Name = teamRequest.Name
+			team.Description = teamRequest.Description
+			team.City = teamRequest.City
+			team.Logo = teamRequest.Logo
+			team.Media = teamRequest.Media
+			vars := mux.Vars(r)
+			paramId, _ := strconv.Atoi(vars["id"])
+			team.ID = int64(paramId)
 
-		errorResponse, teamView := getOneTeamById(int64(paramId))
-		if  errorResponse != nil {
-			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+			_, errUpdate := database.DB.Exec("UPDATE teams SET name = $1, description = $2, city = $3, logo = $4, media = $5 WHERE id = $6 and responsible_id = $7",
+				team.Name,
+				team.Description,
+				team.City,
+				team.Logo,
+				team.Media,
+				paramId,
+				AUTH.ID)
+			if errUpdate != nil {
+				log.Println(errUpdate)
+				http.Error(w, errUpdate.Error(), http.StatusBadRequest)
+
+			}
+
+			errorResponse, teamView := getOneTeamById(int64(paramId))
+			if  errorResponse != nil {
+				http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+				return
+			}
+			json.NewEncoder(w).Encode(teamView)
 			return
 		}
-		json.NewEncoder(w).Encode(teamView)
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "PUT, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -317,21 +354,39 @@ func UpdateTeam() http.HandlerFunc {
 // @Router /api/teams/{id} [delete]
 func DeleteTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		paramId, _ := strconv.Atoi(vars["id"])
-		errorResponse, teamView := getOneTeamById(int64(paramId))
-		if errorResponse != nil {
-			w.WriteHeader(http.StatusNotFound)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
-		} else {
-			_, err := database.DB.Exec("DELETE FROM teams WHERE id = $1 and responsible_id = $2", teamView.ID, AUTH.ID)
-			if err != nil {
+		}
+
+		if r.Method == http.MethodDelete {
+			vars := mux.Vars(r)
+			paramId, _ := strconv.Atoi(vars["id"])
+			errorResponse, teamView := getOneTeamById(int64(paramId))
+			if errorResponse != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
-			}
+			} else {
+				_, err := database.DB.Exec("DELETE FROM teams WHERE id = $1 and responsible_id = $2", teamView.ID, AUTH.ID)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 
-			json.NewEncoder(w).Encode("Team deleted")
+				json.NewEncoder(w).Encode("Team deleted")
+			}
+			return
 		}
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "DELETE, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 

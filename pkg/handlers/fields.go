@@ -28,7 +28,7 @@ func GetFields() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := database.DB.Query("SELECT id, name, description, city, address, logo, media, status, created_at  FROM fields")
 		if err != nil {
-			log.Println(err)
+			log.Println("Ошибка в SQL запросе GetFields", err)
 		}
 		defer rows.Close()
 		fields := []models.FieldView{}
@@ -48,16 +48,18 @@ func GetFields() http.HandlerFunc {
 				&fieldView.Status,
 				&fieldView.CreatedAt,
 				); err != nil {
-				log.Println(err)
+				log.Println("Ошибка в Scan", err)
 			}
 
 			if (logo.Valid){
-				var logoFile models.Media
-				errorMedia, logoFile := getOneMedia(logo.String)
-				if  errorMedia != nil {
-					log.Println(errorMedia.Error())
-				}else{
-					fieldView.Logo = &logoFile
+				if logo.String != "" {
+					var logoFile models.Media
+					errorMedia, logoFile := getOneMedia(logo.String)
+					if  errorMedia != nil {
+						log.Println("Ошибка в Logo", logo.String, errorMedia.Error())
+					}else{
+						fieldView.Logo = &logoFile
+					}
 				}
 			}
 			if (media != nil && len(media) > 0){
@@ -68,11 +70,13 @@ func GetFields() http.HandlerFunc {
 					log.Println("Ошибка при парсинге JSON:", err)
 				}
 				for _, mediaFile := range mediaFiles {
-					errorMedia, mediaFile := getOneMedia(mediaFile)
-					if  errorMedia != nil {
-						log.Println(errorMedia.Error())
-					}else{
-						mediaList = append(mediaList, mediaFile)
+					if mediaFile != "" {
+						errorMedia, mediaFile := getOneMedia(mediaFile)
+						if  errorMedia != nil {
+							log.Println("Ошибка в Media", mediaFile, errorMedia.Error())
+						}else{
+							mediaList = append(mediaList, mediaFile)
+						}
 					}
 				}
 				fieldView.Media = &mediaList
@@ -80,7 +84,7 @@ func GetFields() http.HandlerFunc {
 			fields = append(fields, fieldView)
 		}
 		if err := rows.Err(); err != nil {
-			log.Println(err)
+			log.Println("Ошибка в Row Next", err)
 		}
 
 		json.NewEncoder(w).Encode(fields)
@@ -200,37 +204,55 @@ func validateUpdatedAtFieldRequest(r *http.Request) (error, models.UpdateFieldRe
 // @Router /api/fields [post]
 func CreateField() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, fieldRequest := validateCreateFieldRequest(r)
-		if  validation != nil {
-			http.Error(w, validation.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		var field models.Field
-		field.Name = fieldRequest.Name
-		field.Description = fieldRequest.Description
-		field.City = fieldRequest.City
-		field.Address = fieldRequest.Address
-		field.Logo = fieldRequest.Logo
-		field.Media = fieldRequest.Media
-		err := database.DB.QueryRow("INSERT INTO fields (name, description, city, address, logo, media) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-			field.Name,
-			field.Description,
-			field.City,
-			field.Address,
-			field.Logo,
-			field.Media,
-		).Scan(&field.ID)
-		if err != nil {
-			log.Println(err)
-		}
+		if r.Method == http.MethodPost {
+			validation, fieldRequest := validateCreateFieldRequest(r)
+			if  validation != nil {
+				http.Error(w, validation.Error(), http.StatusBadRequest)
+				return
+			}
 
-		errField, fieldView := getOneFieldById(int64(field.ID))
-		if errField != nil {
-			http.Error(w, errField.Error(), http.StatusBadRequest)
+			var field models.Field
+			field.Name = fieldRequest.Name
+			field.Description = fieldRequest.Description
+			field.City = fieldRequest.City
+			field.Address = fieldRequest.Address
+			field.Logo = fieldRequest.Logo
+			field.Media = fieldRequest.Media
+			err := database.DB.QueryRow("INSERT INTO fields (name, description, city, address, logo, media) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+				field.Name,
+				field.Description,
+				field.City,
+				field.Address,
+				field.Logo,
+				field.Media,
+			).Scan(&field.ID)
+			if err != nil {
+				log.Println(err)
+			}
+
+			errField, fieldView := getOneFieldById(int64(field.ID))
+			if errField != nil {
+				http.Error(w, errField.Error(), http.StatusBadRequest)
+				return
+			}
+			json.NewEncoder(w).Encode(fieldView)
 			return
 		}
-		json.NewEncoder(w).Encode(fieldView)
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -248,41 +270,59 @@ func CreateField() http.HandlerFunc {
 // @Router /api/fields/{id} [put]
 func UpdateField() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, fieldRequest := validateUpdatedAtFieldRequest(r)
-		if  validation != nil {
-			http.Error(w, validation.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "PUT, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
-		var field models.Field
-		field.Name = fieldRequest.Name
-		field.Description = fieldRequest.Description
-		field.City = fieldRequest.City
-		field.Address = fieldRequest.Address
-		field.Logo = fieldRequest.Logo
-		field.Media = fieldRequest.Media
-		vars := mux.Vars(r)
-		paramId, _ := strconv.Atoi(vars["id"])
-		field.ID = int64(paramId)
 
-		_, errUpdate := database.DB.Exec("UPDATE fields SET name = $1, description = $2, city = $3, address = $4, logo = $5, media = $6 WHERE id = $7",
-			field.Name,
-			field.Description,
-			field.City,
-			field.Address,
-			field.Logo,
-			field.Media,
-			paramId)
-		if errUpdate != nil {
-			log.Println(errUpdate)
-			http.Error(w, errUpdate.Error(), http.StatusBadRequest)
-		}
+		if r.Method == http.MethodPut {
+			validation, fieldRequest := validateUpdatedAtFieldRequest(r)
+			if  validation != nil {
+				http.Error(w, validation.Error(), http.StatusBadRequest)
+				return
+			}
+			var field models.Field
+			field.Name = fieldRequest.Name
+			field.Description = fieldRequest.Description
+			field.City = fieldRequest.City
+			field.Address = fieldRequest.Address
+			field.Logo = fieldRequest.Logo
+			field.Media = fieldRequest.Media
+			vars := mux.Vars(r)
+			paramId, _ := strconv.Atoi(vars["id"])
+			field.ID = int64(paramId)
 
-		errorResponse, fieldView := getOneFieldById(int64(paramId))
-		if  errorResponse != nil {
-			http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+			_, errUpdate := database.DB.Exec("UPDATE fields SET name = $1, description = $2, city = $3, address = $4, logo = $5, media = $6 WHERE id = $7",
+				field.Name,
+				field.Description,
+				field.City,
+				field.Address,
+				field.Logo,
+				field.Media,
+				paramId)
+			if errUpdate != nil {
+				log.Println(errUpdate)
+				http.Error(w, errUpdate.Error(), http.StatusBadRequest)
+			}
+
+			errorResponse, fieldView := getOneFieldById(int64(paramId))
+			if  errorResponse != nil {
+				http.Error(w, errorResponse.Error(), http.StatusBadRequest)
+				return
+			}
+			json.NewEncoder(w).Encode(fieldView)
 			return
 		}
-		json.NewEncoder(w).Encode(fieldView)
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "PUT, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -296,21 +336,39 @@ func UpdateField() http.HandlerFunc {
 // @Router /api/fields/{id} [delete]
 func DeleteField() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		paramId, _ := strconv.Atoi(vars["id"])
-		errorResponse, fieldView := getOneFieldById(int64(paramId))
-		if errorResponse != nil {
-			w.WriteHeader(http.StatusNotFound)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
-		} else {
-			_, err := database.DB.Exec("DELETE FROM fields WHERE id = $1", fieldView.ID)
-			if err != nil {
+		}
+
+		if r.Method == http.MethodDelete {
+			vars := mux.Vars(r)
+			paramId, _ := strconv.Atoi(vars["id"])
+			errorResponse, fieldView := getOneFieldById(int64(paramId))
+			if errorResponse != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
-			}
+			} else {
+				_, err := database.DB.Exec("DELETE FROM fields WHERE id = $1", fieldView.ID)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 
-			json.NewEncoder(w).Encode("Field deleted")
+				json.NewEncoder(w).Encode("Field deleted")
+			}
+			return
 		}
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "DELETE, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 

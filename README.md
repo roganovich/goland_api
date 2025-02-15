@@ -51,10 +51,12 @@ docker compose up go-app
 ```bash
 docker-compose --env-file .env.local up --build
 ```
+
 #### Зайти в контейнер
 ```bash
 docker exec -it goland_api bash
 ```
+
 #### Список контейнеров
 ```bash
 docker ps -a

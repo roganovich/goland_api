@@ -77,6 +77,29 @@ func AuthAdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
+// Middleware для обработки CORS
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Разрешаем запросы с любого источника (или укажите конкретный домен, например, "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		// Разрешаем методы, которые могут быть использованы
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+		// Разрешаем заголовки, которые могут быть отправлены
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Если это OPTIONS запрос, просто завершаем его
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Передаем управление следующему обработчику
+		next.ServeHTTP(w, r)
+	})
+}
+
 func JsonContentTypeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

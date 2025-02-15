@@ -218,12 +218,30 @@ func Login() http.HandlerFunc {
 
 func Refresh() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenString, errorToken := getNewToken(AUTH.Name, AUTH.Email)
-		if errorToken != nil {
-			http.Error(w, errorToken.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
+			return
 		}
 
-		json.NewEncoder(w).Encode(tokenString)
+		if r.Method == http.MethodPost {
+			tokenString, errorToken := getNewToken(AUTH.Name, AUTH.Email)
+			if errorToken != nil {
+				http.Error(w, errorToken.Error(), http.StatusBadRequest)
+			}
+
+			json.NewEncoder(w).Encode(tokenString)
+			return
+		}
+s
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -239,58 +257,75 @@ func Refresh() http.HandlerFunc {
 // @Router /api/auth [post]
 func CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errValidate, userRequest := validateCreateUserRequest(r)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		if errValidate != nil {
-			// Преобразуем ошибки валидации в JSON
-			var validationErrors []models.ValidationErrorResponse
-			for _, errValidate := range errValidate.(validator.ValidationErrors) {
-				validationErrors = append(validationErrors, models.ValidationErrorResponse{
-					Field:   errValidate.Field(),
-					Message: fmt.Sprintf("Ошибка в поле '%s': '%s'", errValidate.Field(), errValidate.Tag()),
-				})
-			}
-			// Создаем структуру для ответа с ошибкой
-			errorData := models.ErrorResponse{
-				StatusCode:  http.StatusBadRequest,
-				Message: "Возникла ошибка при регистрации",
-				Errors: validationErrors,
-			}
-			// Сериализуем ошибки в JSON
-			jsonResponse, err := json.Marshal(errorData)
-			if err != nil {
-				http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if r.Method == http.MethodPost {
+			errValidate, userRequest := validateCreateUserRequest(r)
+
+			if errValidate != nil {
+				// Преобразуем ошибки валидации в JSON
+				var validationErrors []models.ValidationErrorResponse
+				for _, errValidate := range errValidate.(validator.ValidationErrors) {
+					validationErrors = append(validationErrors, models.ValidationErrorResponse{
+						Field:   errValidate.Field(),
+						Message: fmt.Sprintf("Ошибка в поле '%s': '%s'", errValidate.Field(), errValidate.Tag()),
+					})
+				}
+				// Создаем структуру для ответа с ошибкой
+				errorData := models.ErrorResponse{
+					StatusCode:  http.StatusBadRequest,
+					Message: "Возникла ошибка при регистрации",
+					Errors: validationErrors,
+				}
+				// Сериализуем ошибки в JSON
+				jsonResponse, err := json.Marshal(errorData)
+				if err != nil {
+					http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+					return
+				}
+				// Устанавливаем заголовок Content-Type
+				w.Header().Set("Content-Type", "application/json")
+				// Устанавливаем код состояния HTTP
+				w.WriteHeader(http.StatusBadRequest)
+				// Отправляем JSON-ответ
+				w.Write(jsonResponse)
 				return
 			}
-			// Устанавливаем заголовок Content-Type
-			w.Header().Set("Content-Type", "application/json")
-			// Устанавливаем код состояния HTTP
-			w.WriteHeader(http.StatusBadRequest)
-			// Отправляем JSON-ответ
-			w.Write(jsonResponse)
+
+			var user models.CreateUserRequest
+			user.Name = userRequest.Name
+			user.Email = userRequest.Email
+			user.Phone = userRequest.Phone
+			user.Password = getHashPassword(userRequest.Password)
+
+			err := database.DB.QueryRow("INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING id", user.Name, user.Email, user.Phone, user.Password).Scan(&user.ID)
+			if err != nil {
+				http.Error(w, "Возникла ошибка при регистрации", http.StatusBadRequest)
+				return
+			}
+
+			tokenString, errorToken := getNewToken(user.Name, user.Email)
+			if errorToken != nil {
+				http.Error(w, "Возникла ошибка при регистрации", http.StatusBadRequest)
+				return
+			}
+
+			json.NewEncoder(w).Encode(tokenString)
 			return
 		}
 
-		var user models.CreateUserRequest
-		user.Name = userRequest.Name
-		user.Email = userRequest.Email
-		user.Phone = userRequest.Phone
-		user.Password = getHashPassword(userRequest.Password)
-
-		err := database.DB.QueryRow("INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING id", user.Name, user.Email, user.Phone, user.Password).Scan(&user.ID)
-		if err != nil {
-			http.Error(w, "Возникла ошибка при регистрации", http.StatusBadRequest)
-			return
-		}
-
-		tokenString, errorToken := getNewToken(user.Name, user.Email)
-		if errorToken != nil {
-			http.Error(w, "Возникла ошибка при регистрации", http.StatusBadRequest)
-			return
-		}
-
-		json.NewEncoder(w).Encode(tokenString)
-		return
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -308,60 +343,77 @@ func CreateUser() http.HandlerFunc {
 // @Router /api/users [put]
 func UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errValidate, userRequest := validateUpdatedAtUserRequest(r)
-		if errValidate != nil {
-			// Преобразуем ошибки валидации в JSON
-			var validationErrors []models.ValidationErrorResponse
-			for _, errValidate := range errValidate.(validator.ValidationErrors) {
-				validationErrors = append(validationErrors, models.ValidationErrorResponse{
-					Field:   errValidate.Field(),
-					Message: fmt.Sprintf("Ошибка в поле '%s': '%s'", errValidate.Field(), errValidate.Tag()),
-				})
-			}
-			// Создаем структуру для ответа с ошибкой
-			errorData := models.ErrorResponse{
-				StatusCode:  http.StatusBadRequest,
-				Message: "Возникла ошибка при регистрации",
-				Errors: validationErrors,
-			}
-			// Сериализуем ошибки в JSON
-			jsonResponse, err := json.Marshal(errorData)
-			if err != nil {
-				http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "PUT, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if r.Method == http.MethodPut {
+			errValidate, userRequest := validateUpdatedAtUserRequest(r)
+			if errValidate != nil {
+				// Преобразуем ошибки валидации в JSON
+				var validationErrors []models.ValidationErrorResponse
+				for _, errValidate := range errValidate.(validator.ValidationErrors) {
+					validationErrors = append(validationErrors, models.ValidationErrorResponse{
+						Field:   errValidate.Field(),
+						Message: fmt.Sprintf("Ошибка в поле '%s': '%s'", errValidate.Field(), errValidate.Tag()),
+					})
+				}
+				// Создаем структуру для ответа с ошибкой
+				errorData := models.ErrorResponse{
+					StatusCode:  http.StatusBadRequest,
+					Message: "Возникла ошибка при регистрации",
+					Errors: validationErrors,
+				}
+				// Сериализуем ошибки в JSON
+				jsonResponse, err := json.Marshal(errorData)
+				if err != nil {
+					http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+					return
+				}
+				// Устанавливаем заголовок Content-Type
+				w.Header().Set("Content-Type", "application/json")
+				// Устанавливаем код состояния HTTP
+				w.WriteHeader(http.StatusBadRequest)
+				// Отправляем JSON-ответ
+				w.Write(jsonResponse)
 				return
 			}
-			// Устанавливаем заголовок Content-Type
-			w.Header().Set("Content-Type", "application/json")
-			// Устанавливаем код состояния HTTP
-			w.WriteHeader(http.StatusBadRequest)
-			// Отправляем JSON-ответ
-			w.Write(jsonResponse)
-			return
-		}
 
-		if (userRequest != nil){
-			AUTH.Name = userRequest.Name
-			AUTH.Email = userRequest.Email
-			AUTH.Phone = userRequest.Phone
-			userPassword := getHashPassword(userRequest.Password)
+			if (userRequest != nil){
+				AUTH.Name = userRequest.Name
+				AUTH.Email = userRequest.Email
+				AUTH.Phone = userRequest.Phone
+				userPassword := getHashPassword(userRequest.Password)
 
-			_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3, password = $4 WHERE id = $5",
-				AUTH.Name,
-				AUTH.Email,
-				AUTH.Phone,
-				userPassword,
-				userRequest.ID)
+				_, err := database.DB.Exec("UPDATE users SET name = $1, email = $2, phone = $3, password = $4 WHERE id = $5",
+					AUTH.Name,
+					AUTH.Email,
+					AUTH.Phone,
+					userPassword,
+					userRequest.ID)
 
-			if err != nil {
-				log.Println(err)
+				if err != nil {
+					log.Println(err)
+				}
+
+				json.NewEncoder(w).Encode(AUTH)
+				return
 			}
 
-			json.NewEncoder(w).Encode(AUTH)
+			http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
 			return
 		}
 
-		http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
-		return
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "PUT, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 

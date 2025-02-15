@@ -233,60 +233,78 @@ func validateCreateRentalRequest(r *http.Request) (error, models.CreateRentalReq
 // @Router /api/rentals [post]
 func CreateRental() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		validation, rentalRequest := validateCreateRentalRequest(r)
-		if  validation != nil {
-			http.Error(w, validation.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		var rental models.Rental
-		var status int
+		if r.Method == http.MethodPost {
+			validation, rentalRequest := validateCreateRentalRequest(r)
+			if  validation != nil {
+				http.Error(w, validation.Error(), http.StatusBadRequest)
+				return
+			}
 
-		// Указываем формат
-		layout := "2006-01-02 15:04:05"
-		startDate, errTime := time.Parse(layout, rentalRequest.StartDate)
-		if errTime != nil {
-			http.Error(w, errTime.Error(), http.StatusBadRequest)
+			var rental models.Rental
+			var status int
+
+			// Указываем формат
+			layout := "2006-01-02 15:04:05"
+			startDate, errTime := time.Parse(layout, rentalRequest.StartDate)
+			if errTime != nil {
+				http.Error(w, errTime.Error(), http.StatusBadRequest)
+				return
+			}
+			rental.StartDate = startDate
+
+			endDate, errTime := time.Parse(layout, rentalRequest.EndDate)
+			if errTime != nil {
+				http.Error(w, errTime.Error(), http.StatusBadRequest)
+				return
+			}
+			rental.EndDate = endDate
+
+			rental.FieldID = rentalRequest.FieldID
+			rental.TeamID = rentalRequest.TeamID
+			rental.Comment = rentalRequest.Comment
+
+			// Вычисляем разницу между двумя временами
+			duration := rental.EndDate.Sub(rental.StartDate)
+			// Преобразуем разницу в секунды
+			rental.Duration = int(duration.Seconds())
+
+			err := database.DB.QueryRow("INSERT INTO rentals (field_id, team_id, user_id, comment, start_date, end_date, duration, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+				rental.FieldID,
+				rental.TeamID,
+				AUTH.ID,
+				rental.Comment,
+				rental.StartDate,
+				rental.EndDate,
+				rental.Duration,
+				&status,
+			).Scan(&rental.ID)
+			if err != nil {
+				log.Println(err)
+			}
+
+			errrental, rentalView := getOneRentalById(int64(rental.ID))
+			if errrental != nil {
+				http.Error(w, errrental.Error(), http.StatusBadRequest)
+				return
+			}
+			json.NewEncoder(w).Encode(rentalView)
 			return
 		}
-		rental.StartDate = startDate
 
-		endDate, errTime := time.Parse(layout, rentalRequest.EndDate)
-		if errTime != nil {
-			http.Error(w, errTime.Error(), http.StatusBadRequest)
-			return
-		}
-		rental.EndDate = endDate
-
-		rental.FieldID = rentalRequest.FieldID
-		rental.TeamID = rentalRequest.TeamID
-		rental.Comment = rentalRequest.Comment
-
-		// Вычисляем разницу между двумя временами
-		duration := rental.EndDate.Sub(rental.StartDate)
-		// Преобразуем разницу в секунды
-		rental.Duration = int(duration.Seconds())
-
-		err := database.DB.QueryRow("INSERT INTO rentals (field_id, team_id, user_id, comment, start_date, end_date, duration, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
-			rental.FieldID,
-			rental.TeamID,
-			AUTH.ID,
-			rental.Comment,
-			rental.StartDate,
-			rental.EndDate,
-			rental.Duration,
-			&status,
-		).Scan(&rental.ID)
-		if err != nil {
-			log.Println(err)
-		}
-
-		errrental, rentalView := getOneRentalById(int64(rental.ID))
-		if errrental != nil {
-			http.Error(w, errrental.Error(), http.StatusBadRequest)
-			return
-		}
-		json.NewEncoder(w).Encode(rentalView)
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 

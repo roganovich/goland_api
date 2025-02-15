@@ -18,34 +18,52 @@ import (
 // @Router /api/address/suggests [get]
 func SuggestAddress() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Получаем параметры из URL
-		queryParams := r.URL.Query()
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Извлекаем значение параметра "query"
-		query := queryParams.Get("query")
-
-		// Проверяем, был ли передан параметр
-		if query == "" {
-			log.Println("Параметр 'query' не указан")
-			return
-		}
-		// Создаем запрос с адресом для поиска
-		addressRequest := models.AddressRequest{
-			Query: query,
-		}
-
-		// Преобразуем запрос в JSON
-		requestBody, err := json.Marshal(addressRequest)
-		if err != nil {
-			log.Println("Ошибка при чтении запроса:", err)
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		addressResponse, err := dadata.Suggest(requestBody)
-		if err != nil {
-			log.Println("Ошибка при обращении к сервису:", err)
+		if r.Method == http.MethodPost {
+			// Получаем параметры из URL
+			queryParams := r.URL.Query()
+
+			// Извлекаем значение параметра "query"
+			query := queryParams.Get("query")
+
+			// Проверяем, был ли передан параметр
+			if query == "" {
+				log.Println("Параметр 'query' не указан")
+				return
+			}
+			// Создаем запрос с адресом для поиска
+			addressRequest := models.AddressRequest{
+				Query: query,
+			}
+
+			// Преобразуем запрос в JSON
+			requestBody, err := json.Marshal(addressRequest)
+			if err != nil {
+				log.Println("Ошибка при чтении запроса:", err)
+				return
+			}
+
+			addressResponse, err := dadata.Suggest(requestBody)
+			if err != nil {
+				log.Println("Ошибка при обращении к сервису:", err)
+				return
+			}
+			json.NewEncoder(w).Encode(addressResponse.Suggestions)
 			return
 		}
-		json.NewEncoder(w).Encode(addressResponse.Suggestions)
+
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
