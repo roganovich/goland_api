@@ -51,7 +51,7 @@ func main() {
 	router.HandleFunc("/api/auth/info", handlers.AuthMiddleware(handlers.InfoUser())).Methods("GET")
 	router.HandleFunc("/api/auth/create", handlers.CreateUser()).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/auth/update", handlers.AuthMiddleware(handlers.UpdateUser())).Methods("PUT", "OPTIONS")
-	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST")
+	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/auth/refresh", handlers.AuthMiddleware(handlers.Refresh())).Methods("POST", "OPTIONS")
 	//router.HandleFunc("/api/auth", handlers.DeleteUser()).Methods("DELETE")
 

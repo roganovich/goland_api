@@ -188,31 +188,49 @@ func InfoUser() http.HandlerFunc {
 
 func Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errorValidation, userRequest := validateLoginUserRequest(r)
-		if  errorValidation != nil {
-			http.Error(w, errorValidation.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		errorQuery, user := getUserViewByIdByEmail(userRequest.Email)
-		if  errorQuery != nil {
-			http.Error(w, errorQuery.Error(), http.StatusBadRequest)
+		if r.Method == http.MethodPost {
+			errorValidation, userRequest := validateLoginUserRequest(r)
+			if errorValidation != nil {
+				http.Error(w, errorValidation.Error(), http.StatusBadRequest)
+				return
+			}
+
+			errorQuery, user := getUserViewByIdByEmail(userRequest.Email)
+			if errorQuery != nil {
+				http.Error(w, errorQuery.Error(), http.StatusBadRequest)
+				return
+			}
+
+			checkPassword := checkPasswordHash(userRequest.Password, user.Password)
+
+			if checkPassword != true {
+				http.Error(w, "Invalid password", http.StatusBadRequest)
+				return
+			}
+
+			tokenString, errorToken := getNewToken(user.Name, user.Email)
+			if errorToken != nil {
+				http.Error(w, errorToken.Error(), http.StatusBadRequest)
+			}
+
+			json.NewEncoder(w).Encode(tokenString)
 			return
 		}
 
-		checkPassword := checkPasswordHash(userRequest.Password, user.Password)
-
-		if checkPassword != true {
-			http.Error(w, "Invalid password", http.StatusBadRequest)
-			return
-		}
-
-		tokenString, errorToken := getNewToken(user.Name, user.Email)
-		if errorToken != nil {
-			http.Error(w, errorToken.Error(), http.StatusBadRequest)
-		}
-
-		json.NewEncoder(w).Encode(tokenString)
+		// Если метод не поддерживается
+		w.Header().Set("Allow", "POST, OPTIONS")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -238,7 +256,7 @@ func Refresh() http.HandlerFunc {
 			json.NewEncoder(w).Encode(tokenString)
 			return
 		}
-s
+
 		// Если метод не поддерживается
 		w.Header().Set("Allow", "POST, OPTIONS")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
