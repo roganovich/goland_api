@@ -1,21 +1,21 @@
 package handlers
 
 import (
-	"goland_api/pkg/models"
-	"goland_api/pkg/database"
 	"database/sql"
 	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
 	"fmt"
-	"time"
-	"os"
 	"github.com/go-playground/validator"
+	jwt "github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"goland_api/pkg/database"
+	"goland_api/pkg/models"
 	"golang.org/x/crypto/bcrypt"
-	jwt "github.com/golang-jwt/jwt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 )
 
 // Документация для метода GetUsers
@@ -181,8 +181,18 @@ func GetUser() http.HandlerFunc {
 // @Router /api/auth [get]
 func InfoUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			// Устанавливаем заголовки для CORS
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			// Отправляем успешный ответ
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		json.NewEncoder(w).Encode(AUTH)
-		return
 	}
 }
 
@@ -643,7 +653,7 @@ func ParseToken(tokenString string) (*jwt.Token, error) {
 	if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
 		// Получаем значение jti
 		jti := claims.Id // jti хранится в поле Id структуры StandardClaims
-		fmt.Println("jti:", jti)
+		//fmt.Println("jti:", jti)
 	} else {
 		log.Fatal("Неверный токен или claims")
 	}

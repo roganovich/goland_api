@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"goland_api/pkg/handlers"
 	"goland_api/pkg/database"
 	"goland_api/pkg/cmd"
@@ -12,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/swaggo/http-swagger"
 	_ "goland_api/docs"
+	"github.com/joho/godotenv"
 )
 
 // @title My Golang API
@@ -20,6 +20,12 @@ import (
 // @host localhost:8080
 // @BasePath /api
 func main() {
+	// Загружаем .env файл
+	err := godotenv.Load(".env.local")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// InitDB
 	dataSourceName := os.Getenv("DATABASE_URL")
 	database.InitDB(dataSourceName)
@@ -48,7 +54,7 @@ func main() {
 	router.HandleFunc("/api/users/{id}", handlers.AuthAdminMiddleware(handlers.GetUser())).Methods("GET")
 
 	// Кабинет
-	router.HandleFunc("/api/auth/info", handlers.AuthMiddleware(handlers.InfoUser())).Methods("GET")
+	router.HandleFunc("/api/auth/info", handlers.AuthMiddleware(handlers.InfoUser())).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/auth/create", handlers.CreateUser()).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/auth/update", handlers.AuthMiddleware(handlers.UpdateUser())).Methods("PUT", "OPTIONS")
 	router.HandleFunc("/api/auth/login", handlers.Login()).Methods("POST", "OPTIONS")
